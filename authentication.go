@@ -57,7 +57,11 @@ func verifyCredentials(username string, password string, realm string) bool {
 		return false
 
 	}
-	hashToCompare := generateMD5Hash(username, realm, password)
+	hashToCompare, err := generateMD5Hash(username, realm, password)
+	if err != nil {
+		log.Println("Error generating hash")
+		return false
+	}
 	users, err := readUserPasswdFile(config.CredentialsFilePath)
 	if err != nil {
 		return false
@@ -70,8 +74,11 @@ func verifyCredentials(username string, password string, realm string) bool {
 	return false
 }
 
-func generateMD5Hash(userName, realm, password string) string {
+func generateMD5Hash(userName, realm, password string) (string, error) {
 	h := md5.New()
-	io.WriteString(h, fmt.Sprintf("%s:%s:%s", userName, realm, password))
-	return fmt.Sprintf("%x", h.Sum(nil))
+	_, err := io.WriteString(h, fmt.Sprintf("%s:%s:%s", userName, realm, password))
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
