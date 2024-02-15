@@ -94,7 +94,7 @@ services:
 
 ```
 
-#### Precompiled binary
+#### Precompiled binary (coming soon)
 
 Get the latest release from the releases page and run it with `./tr-webdav` (or `tr-webdav.exe` on Windows).
 
