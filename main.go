@@ -33,7 +33,7 @@ func main() {
 	})
 	go func() {
 		log.Println("WebDAV server listening at port 8080")
-		if err := http.ListenAndServe(":8080", nil); err != nil {
+		if err := http.ListenAndServe(":8081", nil); err != nil {
 			log.Fatalf("WebDAV server failed on HTTP interface: %s", err)
 		}
 	}()

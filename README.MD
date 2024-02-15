@@ -16,7 +16,6 @@ In order to run the server, you need the following configuration files:
 "credentialsFilePath": "/path/to/user.passwd", // The path to the credentials file (explained below)
 "permissionsFilePath": "/path/to/permissions.json" // The path to the permissions file (explained below)
 "realm": "WebDAV" // The realm for the webdav server
-"restrictedDirectories": ["dir1", "dir2"] // A list of directories that are restricted and need permission (specified in permissions.json) to access
 "usersRoot": "users" // The name after the user directories come (for example /users/my-user) - it is only accessible by the user itself and the admin user
 "certPath": "/path/to/cert.pem" // The path to the certificate file (for HTTPS)
 "keyPath": "/path/to/key.pem" // The path to the key file (for HTTPS)
@@ -35,18 +34,33 @@ file with the following format: `username:realm:passwordHash`
 `permissions.json`
 
 ```
-[
-  {
-    "username": "my-user",
-    "permissions": ["private", "secret", "finances"]
-  }
-]
+{
+  "restrictedDirectories": [
+    "admin"
+  ],
+  "userPermissions": [
+    {
+      "username": "test",
+      "allowed": [
+        "admin",
+        "datev"
+      ],
+      "restricted": [
+        "finanzen",
+        "datev"
+      ]
+    }
+  ]
+}
 ```
 
-This file contains of an array of users, which can have an array of permissions. Those permissions **must** match the
-restricted directories you specified in the conf.json file before.
-If a user is not specified in this file, the server will handle it as if the user has no permissions at all (just his
-home directory).
+This file contains an array of restricted directories (which need explicit permission to access) and an array of
+user-specific permissions that may override them.
+Here you need to specify which permissions on globally restricted directories a user has and which directories are
+restricted for the user. If a directory is both allowed and restricted, the restricted permission takes precedence.
+This is useful if you have a non-restricted folder (for example "images") but want to restrict a certain user, for
+example bob from accessing it. You just need to add "images" to the restricted array for bob and he won't be able to
+access it.
 
 ### Usage
 
@@ -69,7 +83,7 @@ services:
     volumes:
       - /path/to/conf.json:/app/conf.json
       - /path/to/user.passwd:/app/user.passwd
-      - /path/to/permissions.json:/app/permissions.json
+      - /path/to/access-control.json:/app/access-control.json
       - /path/to/data:/app/data
       - /path/to/cert.pem:/app/cert.pem
       - /path/to/key.pem:/app/key.pem

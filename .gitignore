@@ -1,4 +1,5 @@
-conf.json
-permissions.json
-data
+*.json
+*.passwd
 .idea
+data
+webdav

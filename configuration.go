@@ -6,15 +6,14 @@ import (
 )
 
 type Configuration struct {
-	AdminUserName         string   `json:"adminUserName"`
-	CredentialsFilePath   string   `json:"credentialsFilePath"`
-	PermissionsFilePath   string   `json:"permissionsFilePath"`
-	Realm                 string   `json:"realm"`
-	RestrictedDirectories []string `json:"restrictedDirectories"`
-	UsersRoot             string   `json:"usersRoot"`
-	DataPath              string   `json:"dataPath"`
-	CertPath              string   `json:"certPath"`
-	KeyPath               string   `json:"keyPath"`
+	AdminUserName       string `json:"adminUserName"`
+	CredentialsFilePath string `json:"credentialsFilePath"`
+	PermissionsFilePath string `json:"permissionsFilePath"`
+	Realm               string `json:"realm"`
+	UsersRoot           string `json:"usersRoot"`
+	DataPath            string `json:"dataPath"`
+	CertPath            string `json:"certPath"`
+	KeyPath             string `json:"keyPath"`
 }
 
 func readConfiguration() (*Configuration, error) {
