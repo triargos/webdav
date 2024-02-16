@@ -7,44 +7,37 @@ import (
 	"strings"
 )
 
-func CheckPathPermission(path string, username string) bool {
-	config, err := readConfiguration()
+func CheckPathPermission(path string, username string) (bool, error) {
+	configuration, err := readConfiguration()
 	if err != nil {
-		return handleConfigurationReadError(err)
+		return false, err
 	}
-	if username == config.AdminUserName {
-		return true
-	}
-	accessControl, err := readAccessControl(config.PermissionsFilePath)
+	accessControl, err := readAccessControl(configuration.PermissionsFilePath)
 	if err != nil {
-		return handleConfigurationReadError(err)
-
+		return false, err
 	}
-	permissions, err := findUserPermissions(username, *accessControl)
+	isRestricted := isRestrictedDir(path, accessControl)
+	if !isRestricted {
+		return true, nil
+	}
+	userPermissions, err := findUserPermissions(username, accessControl)
 	if err != nil {
-		return false
+		return false, err
 	}
-	relevantPath := strings.ToLower(strings.Split(path, "/")[1])
-	if relevantPath == config.UsersRoot {
-		return isUserFolder(username, path)
+	//Check if the path is explitly forbidden
+	if isForbidden(path, userPermissions.Restricted) {
+		return true, nil
 	}
-	//Check if the path is restricted for the user specifically
-	restrictedForUser := findRestriction(relevantPath, permissions.Restricted)
-	if restrictedForUser {
-		return false
-	}
-	//Check if the path is restricted for all
-	restrictedForAll := findRestriction(relevantPath, accessControl.RestrictedDirectories)
-	if !restrictedForAll {
-		return true
-	}
-	//Otherwise, check if the user has the required permission
-	return hasPermission(relevantPath, permissions.Allowed)
+	return hasPermission(path, userPermissions.Allowed), nil
 }
 
-func isUserFolder(username string, path string) bool {
-	usernameSegment := strings.Split(path, "/")[2]
-	return usernameSegment == username
+func isRestrictedDir(path string, accessControl *AccessControl) bool {
+	for _, dir := range accessControl.RestrictedDirectories {
+		if strings.HasPrefix(path, dir) {
+			return true
+		}
+	}
+	return false
 }
 
 type AccessControl struct {
@@ -73,7 +66,7 @@ func readAccessControl(filePath string) (*AccessControl, error) {
 	return &permissions, nil
 }
 
-func findUserPermissions(username string, accessControl AccessControl) (*UserPermissions, error) {
+func findUserPermissions(username string, accessControl *AccessControl) (*UserPermissions, error) {
 	for _, userPermission := range accessControl.UserPermissions {
 		if userPermission.Username == username {
 			return &userPermission, nil
@@ -82,18 +75,20 @@ func findUserPermissions(username string, accessControl AccessControl) (*UserPer
 	return nil, errors.New("user not found")
 }
 
-func findRestriction(path string, paths []string) bool {
-	for _, pathElement := range paths {
-		if pathElement == path {
+// TODO: Fix this
+func isForbidden(path string, forbidden []string) bool {
+	for _, forbiddenPath := range forbidden {
+		if strings.HasPrefix(path, forbiddenPath) {
+			println("Forbidden:", forbiddenPath)
 			return true
 		}
 	}
 	return false
 }
 
-func hasPermission(requiredPermission string, allowed []string) bool {
-	for _, permission := range allowed {
-		if permission == requiredPermission {
+func hasPermission(path string, allowed []string) bool {
+	for _, allowedPath := range allowed {
+		if strings.HasPrefix(path, allowedPath) {
 			return true
 		}
 	}
