@@ -1,4 +1,4 @@
-package server
+package auth
 
 import (
 	"github.com/triargos/webdav/pkg/config"
@@ -22,13 +22,6 @@ func HashPasswords() {
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-func AuthenticateUser(username, password string) bool {
-	users := *config.Value.Users
-	user := users[username]
-	isValid := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	return isValid == nil
 }
 
 func isHashed(password string) bool {

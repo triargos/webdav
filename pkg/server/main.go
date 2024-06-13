@@ -1,10 +1,11 @@
 package server
 
 import (
-	"context"
 	"fmt"
+	"github.com/triargos/webdav/pkg/auth"
 	"github.com/triargos/webdav/pkg/config"
 	"github.com/triargos/webdav/pkg/fs"
+	"github.com/triargos/webdav/pkg/handler"
 	"github.com/triargos/webdav/pkg/logging"
 	"golang.org/x/net/webdav"
 	"net/http"
@@ -13,6 +14,15 @@ import (
 	"syscall"
 	"time"
 )
+
+func webdavLogger(req *http.Request, err error) {
+	if err != nil {
+		logging.Log.Error.Println(err)
+	} else {
+		logging.Log.Info.Println(req.Method, req.URL.Path)
+	}
+
+}
 
 func StartWebdavServer() error {
 	if !fs.PathExists(config.Value.Content.Dir) {
@@ -23,15 +33,14 @@ func StartWebdavServer() error {
 		}
 	}
 	address := fmt.Sprintf("%s:%s", config.Value.Network.Address, config.Value.Network.Port)
-	webdavSrv := &webdav.Handler{
-		FileSystem: &WebdavFs{webdav.Dir(config.Value.Content.Dir)},
-		LockSystem: webdav.NewMemLS(),
-		Logger: func(r *http.Request, err error) {
-			logging.Log.Info.Printf("%s %s: %s\n", r.Method, r.URL, err)
-		},
+	fileSystem := handler.NewWebdavFs(webdav.Dir(config.Value.Content.Dir))
+	if fileSystem == nil {
+		logging.Log.Error.Println("Failed to create file system")
+		return os.ErrInvalid
 	}
 
-	http.Handle("/", AuthMiddleware(webdavSrv))
+	webdavSrv := handler.NewWebdavHandler(fileSystem, webdav.NewMemLS(), webdavLogger)
+	http.Handle("/", auth.Middleware(webdavSrv))
 	go func() {
 		logging.Log.Info.Printf("WebDAV server started on %s\n", address)
 		if err := http.ListenAndServe(address, nil); err != nil {
@@ -45,21 +54,4 @@ func StartWebdavServer() error {
 	time.Sleep(1 * time.Second)
 	logging.Log.Info.Println("Server stopped")
 	return nil
-}
-
-func AuthMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		username, password, ok := request.BasicAuth()
-		if !ok || !AuthenticateUser(username, password) {
-			writer.Header().Set("WWW-Authenticate", `Basic realm="WebDAV"`)
-			http.Error(writer, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-		if !CheckPermission(request.URL.Path, username) {
-			http.Error(writer, "Forbidden", http.StatusForbidden)
-			return
-		}
-		ctx := context.WithValue(request.Context(), "user", username)
-		next.ServeHTTP(writer, request.WithContext(ctx))
-	})
 }

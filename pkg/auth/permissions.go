@@ -1,11 +1,11 @@
-package server
+package auth
 
 import (
 	"github.com/triargos/webdav/pkg/config"
 	"strings"
 )
 
-func CheckPermission(currentPath, username string) bool {
+func HasPermission(currentPath, username string) bool {
 	users := *config.Value.Users
 	user, ok := users[username]
 	if !ok {

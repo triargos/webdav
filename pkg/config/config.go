@@ -36,6 +36,10 @@ type User struct {
 	Admin          bool     `yaml:"admin"`
 }
 
+func (c *Config) AddUser(username string, user User) {
+	(*c.Users)[username] = user
+}
+
 func (u *User) UpdatePassword(password string) {
 	u.Password = password
 }
@@ -88,6 +92,10 @@ func Init() error {
 	return nil
 }
 
+func WriteDefaultConfig() error {
+	return WriteConfig(&defaultConfig)
+}
+
 func ReadConfig() (*Config, error) {
 	logging.Log.Info.Printf("Reading config from %s...", filepath.Join(configDir, "config.yaml"))
 	if !fs.PathExists(filepath.Join(configDir, "config.yaml")) {
@@ -110,7 +118,6 @@ func ReadConfig() (*Config, error) {
 		return nil, err
 	}
 	return config, nil
-
 }
 
 func WriteConfig(config *Config) error {
