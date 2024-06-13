@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/triargos/webdav/pkg/auth"
+	"github.com/triargos/webdav/pkg/config"
 	"github.com/triargos/webdav/pkg/logging"
 	"github.com/triargos/webdav/pkg/server"
 )
@@ -17,9 +18,13 @@ var startCmd = &cobra.Command{
 		logging.Log.Info.Println("User directories created successfully")
 		logging.Log.Info.Println("Hashing non-hashed passwords...")
 		auth.HashPasswords()
+		err := config.Write()
+		if err != nil {
+			logging.Log.Error.Fatalf("Error writing config: %s\n", err)
+		}
 		logging.Log.Info.Println("Passwords hashed successfully")
 		logging.Log.Info.Println("Starting server...")
-		err := server.StartWebdavServer()
+		err = server.StartWebdavServer()
 		if err != nil {
 			logging.Log.Error.Fatalf("Error starting server: %s\n", err)
 		}

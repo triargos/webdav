@@ -20,7 +20,7 @@ var genconfigCmd = &cobra.Command{
 				logging.Log.Error.Fatalf("Error writing default config: %s\n", err)
 			}
 		} else {
-			err := config.Init()
+			err := config.Read()
 			if err != nil {
 				logging.Log.Error.Fatalf("Error reading config: %s\n", err)
 

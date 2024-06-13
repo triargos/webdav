@@ -19,14 +19,14 @@ var adduserCmd = &cobra.Command{
 		dir := cmd.Flag("dir").Value.String()
 		jailed, _ := cmd.Flags().GetBool("jailed")
 		subdirectories, _ := cmd.Flags().GetStringArray("subdirs")
-		config.Value.AddUser(username, config.User{
+		config.AddUser(username, config.User{
 			Password:       auth.GenHash([]byte(password)),
 			Admin:          admin,
 			SubDirectories: subdirectories,
 			Jail:           jailed,
 			Root:           dir,
 		})
-		err := config.WriteConfig(config.Value)
+		err := config.Write()
 		if err != nil {
 			logging.Log.Error.Fatalf("Error writing config: %s\n", err)
 		}

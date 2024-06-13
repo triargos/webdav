@@ -6,8 +6,8 @@ import (
 )
 
 func HasPermission(currentPath, username string) bool {
-	users := *config.Value.Users
-	user, ok := users[username]
+	cfg := config.Get()
+	user, ok := (*cfg.Users)[username]
 	if !ok {
 		return false
 	}
@@ -17,7 +17,7 @@ func HasPermission(currentPath, username string) bool {
 	if user.Jail {
 		return isSubPath(user.Root, currentPath)
 	}
-	for otherUserName, otherUser := range *config.Value.Users {
+	for otherUserName, otherUser := range *cfg.Users {
 		if otherUserName == username {
 			continue
 		}

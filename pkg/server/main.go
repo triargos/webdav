@@ -25,15 +25,18 @@ func webdavLogger(req *http.Request, err error) {
 }
 
 func StartWebdavServer() error {
-	if !fs.PathExists(config.Value.Content.Dir) {
+	cfg := config.Get()
+	dir := cfg.Content.Dir
+
+	if !fs.PathExists(dir) {
 		logging.Log.Info.Println("Creating data directory...")
-		err := os.Mkdir(config.Value.Content.Dir, 0755)
+		err := os.Mkdir(dir, 0755)
 		if err != nil {
 			return err
 		}
 	}
-	address := fmt.Sprintf("%s:%s", config.Value.Network.Address, config.Value.Network.Port)
-	fileSystem := handler.NewWebdavFs(webdav.Dir(config.Value.Content.Dir))
+	address := fmt.Sprintf("%s:%s", cfg.Network.Address, cfg.Network.Port)
+	fileSystem := handler.NewWebdavFs(webdav.Dir(dir))
 	if fileSystem == nil {
 		logging.Log.Error.Println("Failed to create file system")
 		return os.ErrInvalid

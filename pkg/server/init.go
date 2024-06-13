@@ -9,8 +9,10 @@ import (
 )
 
 func CreateUserDirectories() {
-	for _, user := range *config.Value.Users {
-		rootPath := filepath.Join(config.Value.Content.Dir, user.Root)
+	cfg := config.Get()
+
+	for _, user := range *cfg.Users {
+		rootPath := filepath.Join(cfg.Content.Dir, user.Root)
 		if !fs.PathExists(rootPath) {
 			err := os.MkdirAll(rootPath, os.ModePerm)
 			if err != nil {

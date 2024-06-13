@@ -33,7 +33,7 @@ func init() {
 	}
 	logging.InitLoggers()
 	logging.Log.Info.Println("Logging initialized")
-	err := config.Init()
+	err := config.Read()
 	if err != nil {
 		logging.Log.Error.Fatalf("Error reading config: %s\n", err)
 	}

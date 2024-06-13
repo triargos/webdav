@@ -9,7 +9,8 @@ import (
 )
 
 func HashPasswords() {
-	users := *config.Value.Users
+	cfg := config.Get()
+	users := *cfg.Users
 	for username, user := range users {
 		if !isHashed(user.Password) {
 			logging.Log.Info.Println("Hashing password for user", username)
@@ -17,11 +18,8 @@ func HashPasswords() {
 			users[username] = user
 		}
 	}
-	config.Value.Users = &users
-	err := config.WriteConfig(config.Value)
-	if err != nil {
-		log.Fatal(err)
-	}
+	cfg.Users = &users
+	config.Set(cfg)
 }
 
 func isHashed(password string) bool {
