@@ -12,6 +12,7 @@ _webdav-go_ is a simple WebDAV server that provides the following features:
 
 - [Configuration](#configuration)
     * [First steps](#first-steps)
+    * [User management](#user-management)
     * [Persisting data](#persisting-data)
     * [TLS](#tls)
     * [Build and run with Docker](#build-and-run-with-docker)
@@ -37,17 +38,34 @@ content:
   dir: /var/webdav/data
 users:
   admin:
-    password: [ HASHED_PASSWORD ]
-    root: /document/Admin
+    password: admin (this will be hashed on startup)
+    root: /Users/admin
     sub_directories:
       - documents
     admin: true
 ```
 
-If you add users, you can specify the password in plain text. The server will hash them on startup.
+You can always regenerate this by executing `webdav-go` genconfig. If you specifiy the `--reset`, flag, it will
+overwrite your existing configuration file.
 
-With this configuration you'll grant access for two users and the WebDAV
+If you add users, you can specify the password in plain text. The server will hash them on startup.
+If you want to add them programmatically, add them
+via `webdav-go adduser -u [USERNAME] -p [PASSWORD] -d [ROOT_DIRECTORY] [...OPTIONAL ARGS]`. The password will be hashed
+on the fly.
+
+
+With this configuration you'll grant access for an `admin` user (with the password `admin`) and the WebDAV
 server is available under `http://127.0.0.1:8080/`.
+
+### User management
+When adding users, you can specify the following options in the configuration
+- `root` - the root directory of the user (mandatory)
+- `admin` - a boolean flag that specifies if the user is an admin. No permissions will be checked (optional)
+- `password` - the password of the user (mandatory). This will be hashed on startup
+- `jailed` - a boolean value that specifies if the user should be jailed to his root directory and subdirectories (optional)
+- `sub_directories` - a list of subdirectories that will be created for the user (optional)
+
+Users that are non-admin are forbidden to access other users root directories and subdirectories by default.
 
 ### Persisting data
 
