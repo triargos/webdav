@@ -26,6 +26,9 @@ func StartWebdavServer() error {
 	webdavSrv := &webdav.Handler{
 		FileSystem: &WebdavFs{webdav.Dir(config.Value.Content.Dir)},
 		LockSystem: webdav.NewMemLS(),
+		Logger: func(r *http.Request, err error) {
+			logging.Log.Info.Printf("%s %s: %s\n", r.Method, r.URL, err)
+		},
 	}
 
 	http.Handle("/", AuthMiddleware(webdavSrv))
