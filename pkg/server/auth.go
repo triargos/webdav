@@ -5,8 +5,7 @@ import (
 )
 
 func AuthenticateUser(username, password string) bool {
-	//Find the user
 	user := config.Value.Users[username]
-	isValid := user.Password == password
+	isValid := user.Password != "" && user.Password == password
 	return isValid
 }

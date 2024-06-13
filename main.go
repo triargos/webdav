@@ -5,11 +5,18 @@ import (
 	"github.com/triargos/webdav/pkg/fs"
 	"github.com/triargos/webdav/pkg/logging"
 	"github.com/triargos/webdav/pkg/server"
+	"log"
 	"os"
 	"path/filepath"
 )
 
 func main() {
+	if !fs.PathExists("/etc/webdav") {
+		err := os.Mkdir("/etc/webdav", 0755)
+		if err != nil {
+			log.Fatalf("Error creating /etc/webdav directory: %s\n", err)
+		}
+	}
 	logging.InitLoggers()
 	logging.Log.Info.Println("Logging initialized")
 	logging.Log.Info.Println("Reading config...")

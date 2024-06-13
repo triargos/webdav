@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"github.com/triargos/webdav/pkg/config"
 	"github.com/triargos/webdav/pkg/fs"
@@ -14,7 +15,6 @@ import (
 )
 
 func StartWebdavServer() error {
-	//Create the base path if it doesn't exist
 	if !fs.PathExists(config.Value.Content.Dir) {
 		logging.Log.Info.Println("Creating data directory...")
 		err := os.Mkdir(config.Value.Content.Dir, 0755)
@@ -39,7 +39,7 @@ func StartWebdavServer() error {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	logging.Log.Info.Println("Server is shutting down...")
-	time.Sleep(1 * time.Second) // Wait for 2 seconds to finish processing requests
+	time.Sleep(1 * time.Second)
 	logging.Log.Info.Println("Server stopped")
 	return nil
 }
@@ -56,6 +56,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			http.Error(writer, "Forbidden", http.StatusForbidden)
 			return
 		}
-		next.ServeHTTP(writer, request)
+		ctx := context.WithValue(request.Context(), "user", username)
+		next.ServeHTTP(writer, request.WithContext(ctx))
 	})
 }
