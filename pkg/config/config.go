@@ -5,7 +5,11 @@ import (
 	"github.com/spf13/viper"
 	"github.com/triargos/webdav/pkg/logging"
 	"os"
+	"path/filepath"
 )
+
+var v = viper.NewWithOptions(
+	viper.KeyDelimiter("::"))
 
 type Config struct {
 	Network *NetworkConfig   `mapstructure:"network"`
@@ -62,42 +66,43 @@ var defaultConfig = Config{
 
 func Get() *Config {
 	cfg := &Config{}
-	if err := viper.Unmarshal(&cfg); err != nil {
+	if err := v.Unmarshal(&cfg); err != nil {
 		return &defaultConfig
 	}
 	return cfg
 }
 
 func Set(cfg *Config) {
-	viper.Set("network", cfg.Network)
-	viper.Set("content", cfg.Content)
-	viper.Set("users", cfg.Users)
+	v.Set("network", cfg.Network)
+	v.Set("content", cfg.Content)
+	v.Set("users", cfg.Users)
 }
 
 func Read() error {
 	path := getConfigurationPath()
 	logging.Log.Info.Printf("Reading configuration from %s\n", path)
-	viper.AddConfigPath(getConfigurationPath())
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	if err := viper.ReadInConfig(); err != nil {
-		var configFileNotFoundError viper.ConfigFileNotFoundError
-		if errors.As(err, &configFileNotFoundError) {
-			logging.Log.Info.Println("No configuration file found, creating default configuration")
-			if err := WriteDefaultConfig(); err != nil {
-				return err
-			}
-		}
+	v.SetConfigFile(filepath.Join(path, "config.yaml"))
+	//Set default values
+	v.SetDefault("network", defaultConfig.Network)
+	v.SetDefault("content", defaultConfig.Content)
+	v.SetDefault("users", defaultConfig.Users)
+	v.SetConfigType("yaml")
+	readErr := v.ReadInConfig()
+	logging.Log.Info.Println("ERROR", readErr)
+	var configFileNotFoundError viper.ConfigFileNotFoundError
+	if errors.As(readErr, &configFileNotFoundError) {
+		logging.Log.Info.Println("No configuration file found, creating default configuration")
+		v.WriteConfig()
 	}
 	return nil
 }
 
 func WriteDefaultConfig() error {
-	viper.AddConfigPath(getConfigurationPath())
-	viper.Set("network", defaultConfig.Network)
-	viper.Set("content", defaultConfig.Content)
-	viper.Set("users", defaultConfig.Users)
-	return viper.SafeWriteConfig()
+	v.AddConfigPath(getConfigurationPath())
+	v.Set("network", defaultConfig.Network)
+	v.Set("content", defaultConfig.Content)
+	v.Set("users", defaultConfig.Users)
+	return v.SafeWriteConfig()
 }
 
 func AddUser(username string, user User) {
@@ -109,5 +114,5 @@ func AddUser(username string, user User) {
 }
 
 func Write() error {
-	return viper.WriteConfig()
+	return v.WriteConfig()
 }
