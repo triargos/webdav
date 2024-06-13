@@ -9,7 +9,7 @@ RUN go mod download
 
 # Copy the source code and build the application
 COPY . .
-RUN go build -o /webdav
+RUN CGO_ENABLED=0 GOOS=linux go build -o /webdav
 
 # Second stage: Create the final runtime image
 FROM alpine:latest
@@ -17,8 +17,11 @@ FROM alpine:latest
 # Set the working directory
 WORKDIR /app
 
+# Install necessary CA certificates for HTTPS connections
+RUN apk --no-cache add ca-certificates
+
 # Copy the built binary from the builder stage
-COPY --from=builder /app/webdav .
+COPY --from=builder /webdav .
 
 # Set environment variable if needed
 ENV DOCKER_ENABLED="1"
