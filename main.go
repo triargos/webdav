@@ -28,6 +28,9 @@ func main() {
 	logging.Log.Info.Println("Creating user directories...")
 	CreateUserDirectories()
 	logging.Log.Info.Println("User directories created successfully")
+	logging.Log.Info.Println("Hashing non-hashed passwords...")
+	server.HashPasswords()
+	logging.Log.Info.Println("Passwords hashed successfully")
 	logging.Log.Info.Println("Starting server...")
 	err = server.StartWebdavServer()
 	if err != nil {
@@ -36,7 +39,7 @@ func main() {
 }
 
 func CreateUserDirectories() {
-	for _, user := range config.Value.Users {
+	for _, user := range *config.Value.Users {
 		rootPath := filepath.Join(config.Value.Content.Dir, user.Root)
 		if !fs.PathExists(rootPath) {
 			err := os.MkdirAll(rootPath, os.ModePerm)

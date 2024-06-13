@@ -6,7 +6,8 @@ import (
 )
 
 func CheckPermission(currentPath, username string) bool {
-	user, ok := config.Value.Users[username]
+	users := *config.Value.Users
+	user, ok := users[username]
 	if !ok {
 		return false
 	}
@@ -16,7 +17,7 @@ func CheckPermission(currentPath, username string) bool {
 	if user.Jail {
 		return isSubPath(user.Root, currentPath)
 	}
-	for otherUserName, otherUser := range config.Value.Users {
+	for otherUserName, otherUser := range *config.Value.Users {
 		if otherUserName == username {
 			continue
 		}

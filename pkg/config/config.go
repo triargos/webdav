@@ -2,26 +2,22 @@ package config
 
 import (
 	"github.com/triargos/webdav/pkg/fs"
+	"github.com/triargos/webdav/pkg/logging"
 	"gopkg.in/yaml.v3"
 	"os"
+	"path/filepath"
 )
 
 type Config struct {
-	Network NetworkConfig   `yaml:"network"`
-	TLS     TLSConfig       `yaml:"tls"`
-	Content ContentConfig   `yaml:"content"`
-	Users   map[string]User `yaml:"users"`
+	Network *NetworkConfig   `yaml:"network"`
+	Content *ContentConfig   `yaml:"content"`
+	Users   *map[string]User `yaml:"users"`
 }
 
 type NetworkConfig struct {
 	Address string `yaml:"address"`
 	Port    string `yaml:"port"`
 	Prefix  string `yaml:"prefix,omitempty"`
-}
-
-type TLSConfig struct {
-	KeyFile  string `yaml:"keyFile"`
-	CertFile string `yaml:"certFile"`
 }
 
 type ContentConfig struct {
@@ -40,6 +36,10 @@ type User struct {
 	Admin          bool     `yaml:"admin"`
 }
 
+func (u *User) UpdatePassword(password string) {
+	u.Password = password
+}
+
 type LoggingConfig struct {
 	Error  bool `yaml:"error"`
 	Create bool `yaml:"create"`
@@ -52,42 +52,45 @@ type CORSConfig struct {
 	Origin string `yaml:"origin"`
 }
 
-var Value Config
+var Value *Config
 
 var defaultConfig = Config{
-	Network: NetworkConfig{
+	Network: &NetworkConfig{
 		Address: "0.0.0.0",
 		Port:    "8080",
 		Prefix:  "/",
 	},
-	TLS: TLSConfig{
-		KeyFile:  "server.key",
-		CertFile: "server.crt",
-	},
-	Content: ContentConfig{
+	Content: &ContentConfig{
 		Dir: "/var/webdav/data",
 	},
-	Users: map[string]User{
+	Users: &map[string]User{
 		"admin": {
-			Password: "admin",
-			Jail:     false,
-			Root:     "/Users/admin",
+			Password:       "admin",
+			Admin:          true,
+			Jail:           false,
+			Root:           "/Users/admin",
+			SubDirectories: []string{"documents"},
 		},
 	},
 }
-var configPath = "/etc/webdav/config.yaml"
+var configDir = "./config/webdav"
 
 func Init() error {
+	isDocker := os.Getenv("DOCKER_ENABLED") == "1"
+	if isDocker {
+		configDir = "/etc/webdav/config"
+	}
 	config, err := ReadConfig()
 	if err != nil {
 		return err
 	}
-	Value = *config
+	Value = config
 	return nil
 }
 
 func ReadConfig() (*Config, error) {
-	if !fs.PathExists(configPath) {
+	logging.Log.Info.Printf("Reading config from %s...", filepath.Join(configDir, "config.yaml"))
+	if !fs.PathExists(filepath.Join(configDir, "config.yaml")) {
 		//Write default config to file
 		err := WriteConfig(&defaultConfig)
 		if err != nil {
@@ -95,7 +98,7 @@ func ReadConfig() (*Config, error) {
 		}
 		return &defaultConfig, nil
 	}
-	file, err := os.Open(configPath)
+	file, err := os.Open(filepath.Join(configDir, "config.yaml"))
 	if err != nil {
 		return nil, err
 	}
@@ -112,14 +115,14 @@ func ReadConfig() (*Config, error) {
 
 func WriteConfig(config *Config) error {
 	//Make the path if it doesn't exist
-	if !fs.PathExists("/etc/webdav") {
-		err := os.Mkdir("/etc/webdav", 0755)
+	if !fs.PathExists(configDir) {
+		err := os.Mkdir(configDir, 0755)
 		if err != nil {
 			return err
 		}
 	}
 	//Write config to file
-	file, err := os.OpenFile(configPath, os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(filepath.Join(configDir, "config.yaml"), os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
