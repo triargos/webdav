@@ -1,62 +1,44 @@
 package config
 
 import (
-	"github.com/triargos/webdav/pkg/fs"
+	"errors"
+	"github.com/spf13/viper"
 	"github.com/triargos/webdav/pkg/logging"
-	"gopkg.in/yaml.v3"
 	"os"
-	"path/filepath"
 )
 
 type Config struct {
-	Network *NetworkConfig   `yaml:"network"`
-	Content *ContentConfig   `yaml:"content"`
-	Users   *map[string]User `yaml:"users"`
+	Network *NetworkConfig   `mapstructure:"network"`
+	Content *ContentConfig   `mapstructure:"content"`
+	Users   *map[string]User `mapstructure:"users"`
 }
 
 type NetworkConfig struct {
-	Address string `yaml:"address"`
-	Port    string `yaml:"port"`
-	Prefix  string `yaml:"prefix,omitempty"`
+	Address string `mapstructure:"address"`
+	Port    string `mapstructure:"port"`
+	Prefix  string `mapstructure:"prefix,omitempty"`
 }
 
 type ContentConfig struct {
-	Dir string `yaml:"dir"`
-}
-
-type BasicAuthConfig struct {
-	Realm string `yaml:"realm"`
+	Dir string `mapstructure:"dir"`
 }
 
 type User struct {
-	Password       string   `yaml:"password"`
-	Root           string   `yaml:"root,omitempty"`
-	SubDirectories []string `yaml:"sub_directories,omitempty"`
-	Jail           bool     `yaml:"jail,omitempty"`
-	Admin          bool     `yaml:"admin"`
+	Password       string   `mapstructure:"password"`
+	Root           string   `mapstructure:"root,omitempty"`
+	SubDirectories []string `mapstructure:"subdirectories,omitempty"`
+	Jail           bool     `mapstructure:"jail,omitempty"`
+	Admin          bool     `mapstructure:"admin"`
 }
 
-func (c *Config) AddUser(username string, user User) {
-	(*c.Users)[username] = user
-}
+func getConfigurationPath() string {
+	configPath := "/etc/webdav"
+	if os.Getenv("DOCKER_ENABLED") != "1" {
+		configPath = "./config"
+	}
+	return configPath
 
-func (u *User) UpdatePassword(password string) {
-	u.Password = password
 }
-
-type LoggingConfig struct {
-	Error  bool `yaml:"error"`
-	Create bool `yaml:"create"`
-	Read   bool `yaml:"read"`
-	Update bool `yaml:"update"`
-	Delete bool `yaml:"delete"`
-}
-
-type CORSConfig struct {
-	Origin string `yaml:"origin"`
-}
-
-var Value *Config
 
 var defaultConfig = Config{
 	Network: &NetworkConfig{
@@ -77,70 +59,55 @@ var defaultConfig = Config{
 		},
 	},
 }
-var configDir = "./config/webdav"
 
-func Init() error {
-	isDocker := os.Getenv("DOCKER_ENABLED") == "1"
-	if isDocker {
-		configDir = "/etc/webdav/config"
+func Get() *Config {
+	cfg := &Config{}
+	if err := viper.Unmarshal(&cfg); err != nil {
+		return &defaultConfig
 	}
-	config, err := ReadConfig()
-	if err != nil {
-		return err
+	return cfg
+}
+
+func Set(cfg *Config) {
+	viper.Set("network", cfg.Network)
+	viper.Set("content", cfg.Content)
+	viper.Set("users", cfg.Users)
+}
+
+func Read() error {
+	path := getConfigurationPath()
+	logging.Log.Info.Printf("Reading configuration from %s\n", path)
+	viper.AddConfigPath(getConfigurationPath())
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	if err := viper.ReadInConfig(); err != nil {
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		if errors.As(err, &configFileNotFoundError) {
+			logging.Log.Info.Println("No configuration file found, creating default configuration")
+			if err := WriteDefaultConfig(); err != nil {
+				return err
+			}
+		}
 	}
-	Value = config
 	return nil
 }
 
 func WriteDefaultConfig() error {
-	return WriteConfig(&defaultConfig)
+	viper.AddConfigPath(getConfigurationPath())
+	viper.Set("network", defaultConfig.Network)
+	viper.Set("content", defaultConfig.Content)
+	viper.Set("users", defaultConfig.Users)
+	return viper.SafeWriteConfig()
 }
 
-func ReadConfig() (*Config, error) {
-	logging.Log.Info.Printf("Reading config from %s...", filepath.Join(configDir, "config.yaml"))
-	if !fs.PathExists(filepath.Join(configDir, "config.yaml")) {
-		//Write default config to file
-		err := WriteConfig(&defaultConfig)
-		if err != nil {
-			return nil, err
-		}
-		return &defaultConfig, nil
-	}
-	file, err := os.Open(filepath.Join(configDir, "config.yaml"))
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	decoder := yaml.NewDecoder(file)
-	config := &Config{}
-	err = decoder.Decode(config)
-	if err != nil {
-		return nil, err
-	}
-	return config, nil
+func AddUser(username string, user User) {
+	cfg := Get()
+	users := *cfg.Users
+	users[username] = user
+	cfg.Users = &users
+	Set(cfg)
 }
 
-func WriteConfig(config *Config) error {
-	//Make the path if it doesn't exist
-	if !fs.PathExists(configDir) {
-		err := os.Mkdir(configDir, 0755)
-		if err != nil {
-			return err
-		}
-	}
-	//Write config to file
-	file, err := os.OpenFile(filepath.Join(configDir, "config.yaml"), os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	marshalled, err := yaml.Marshal(config)
-	if err != nil {
-		return err
-	}
-	_, err = file.Write(marshalled)
-	if err != nil {
-		return err
-	}
-	return nil
+func Write() error {
+	return viper.WriteConfig()
 }
