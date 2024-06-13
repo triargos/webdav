@@ -1,0 +1,10 @@
+services:
+
+  webdav:
+    container_name: webdav
+    image: triargos/webdav-go
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/var/webdav/data
+      - ./config:/etc/webdav
