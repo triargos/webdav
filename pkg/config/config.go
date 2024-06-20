@@ -88,7 +88,6 @@ func Read() error {
 	v.SetDefault("users", defaultConfig.Users)
 	v.SetConfigType("yaml")
 	readErr := v.ReadInConfig()
-	logging.Log.Info.Println("ERROR", readErr)
 	var configFileNotFoundError viper.ConfigFileNotFoundError
 	if errors.As(readErr, &configFileNotFoundError) {
 		logging.Log.Info.Println("No configuration file found, creating default configuration")
@@ -109,6 +108,14 @@ func AddUser(username string, user User) {
 	cfg := Get()
 	users := *cfg.Users
 	users[username] = user
+	cfg.Users = &users
+	Set(cfg)
+}
+
+func RemoveUser(username string) {
+	cfg := Get()
+	users := *cfg.Users
+	delete(users, username)
 	cfg.Users = &users
 	Set(cfg)
 }
