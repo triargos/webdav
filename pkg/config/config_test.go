@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/spf13/viper"
+	"github.com/triargos/webdav/pkg/logging"
 	"os"
 	"testing"
 
@@ -72,11 +73,11 @@ func TestGet(t *testing.T) {
 			name: "DefaultConfig",
 			configSetup: func() {
 				v = viper.NewWithOptions(viper.KeyDelimiter("::"))
-				v.SetDefault("network", defaultConfig.Network)
-				v.SetDefault("content", defaultConfig.Content)
-				v.SetDefault("users", defaultConfig.Users)
+				v.SetDefault("network", configTemplate.Network)
+				v.SetDefault("content", configTemplate.Content)
+				v.SetDefault("users", configTemplate.Users)
 			},
-			expected: &defaultConfig,
+			expected: &configTemplate,
 		},
 	}
 
@@ -140,6 +141,113 @@ func TestAddAndRemoveUser(t *testing.T) {
 
 			result := Get()
 			assert.Equal(t, tt.expectedUsers, *result.Users)
+		})
+	}
+}
+
+func TestWriteDefaultConfig(t *testing.T) {
+	tests := []struct {
+		name              string
+		webdavPort        string
+		createNoAdminUser bool
+		webdavDataDir     string
+		expectedNetwork   *NetworkConfig
+		expectedContent   *ContentConfig
+		expectedUsers     *map[string]User
+	}{
+		{
+			name:              "All flags set",
+			webdavPort:        "9090",
+			createNoAdminUser: true,
+			webdavDataDir:     "/tmp/webdav",
+			expectedNetwork: &NetworkConfig{
+				Address: "0.0.0.0",
+				Port:    "9090",
+				Prefix:  "/",
+			},
+			expectedContent: &ContentConfig{
+				Dir: "/tmp/webdav",
+			},
+			expectedUsers: &map[string]User{},
+		},
+		{
+			name:              "Create admin user not set",
+			webdavPort:        "9090",
+			createNoAdminUser: false,
+			webdavDataDir:     "/tmp/webdav",
+			expectedNetwork: &NetworkConfig{
+				Address: "0.0.0.0",
+				Port:    "9090",
+				Prefix:  "/",
+			},
+			expectedContent: &ContentConfig{
+				Dir: "/tmp/webdav",
+			},
+			expectedUsers: &map[string]User{
+				"admin": {
+					Password:       "admin",
+					Admin:          true,
+					Jail:           false,
+					Root:           "/Users/admin",
+					SubDirectories: []string{"documents"},
+				},
+			},
+		},
+		{
+			name:              "Webdav data dir not set",
+			webdavPort:        "9090",
+			createNoAdminUser: false,
+			webdavDataDir:     "",
+			expectedNetwork: &NetworkConfig{
+				Address: "0.0.0.0",
+				Port:    "9090",
+				Prefix:  "/",
+			},
+			expectedContent: &ContentConfig{
+				Dir: "/var/webdav/data",
+			},
+			expectedUsers: &map[string]User{
+				"admin": {
+					Password:       "admin",
+					Admin:          true,
+					Jail:           false,
+					Root:           "/Users/admin",
+					SubDirectories: []string{"documents"},
+				},
+			},
+		},
+		{
+			name:              "Port not set",
+			webdavPort:        "",
+			createNoAdminUser: false,
+			webdavDataDir:     "/tmp/webdav",
+			expectedNetwork: &NetworkConfig{
+				Address: "0.0.0.0",
+				Port:    "8080",
+				Prefix:  "/",
+			},
+			expectedContent: &ContentConfig{
+				Dir: "/tmp/webdav",
+			},
+			expectedUsers: &map[string]User{
+				"admin": {
+					Password:       "admin",
+					Admin:          true,
+					Jail:           false,
+					Root:           "/Users/admin",
+					SubDirectories: []string{"documents"},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logging.InitLoggers()
+			newConfig := GenerateDefaultConfig(tt.webdavPort, tt.createNoAdminUser, tt.webdavDataDir)
+			assert.Equal(t, tt.expectedNetwork, newConfig.Network)
+			assert.Equal(t, tt.expectedContent, newConfig.Content)
+			assert.Equal(t, tt.expectedUsers, newConfig.Users)
 		})
 	}
 }
