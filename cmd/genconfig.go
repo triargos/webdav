@@ -2,7 +2,8 @@ package cmd
 
 import (
 	"github.com/triargos/webdav/pkg/config"
-	"github.com/triargos/webdav/pkg/logging"
+	"log/slog"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -12,7 +13,7 @@ var genconfigCmd = &cobra.Command{
 	Short: "Generates a new default config file at the config location.",
 	Long:  "Generates a new default config file at the config location. If a config file exists, it will only be overridden when the --reset flag is set to true",
 	Run: func(cmd *cobra.Command, args []string) {
-		logging.Log.Info.Println("Generating config...")
+		slog.Info("Generating config file")
 		reset, _ := cmd.Flags().GetBool("reset")
 		if reset {
 			webdavPort, createNoAdminUser, webdavDataDir := config.ReadEnv()
@@ -20,16 +21,17 @@ var genconfigCmd = &cobra.Command{
 			config.Set(&newConfig)
 			err := config.Write()
 			if err != nil {
-				logging.Log.Error.Fatalf("Error writing default config: %s\n", err)
+				slog.Error("Failed to write default config file:", "error", err.Error())
+				os.Exit(1)
 			}
 		} else {
 			err := config.Read()
 			if err != nil {
-				logging.Log.Error.Fatalf("Error reading config: %s\n", err)
-
+				slog.Error("Failed to read config file:", "error", err.Error())
+				os.Exit(1)
 			}
 		}
-		logging.Log.Info.Println("Config generated successfully")
+		slog.Info("Config file generated successfully")
 	},
 }
 

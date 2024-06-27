@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"github.com/triargos/webdav/pkg/logging"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -67,7 +66,6 @@ func TestMiddleware(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logging.InitLoggers()
 			setupMockUsers(tt.users)
 
 			req, err := http.NewRequest("GET", tt.urlPath, nil)

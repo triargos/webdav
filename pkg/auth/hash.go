@@ -2,9 +2,9 @@ package auth
 
 import (
 	"github.com/triargos/webdav/pkg/config"
-	"github.com/triargos/webdav/pkg/logging"
 	"golang.org/x/crypto/bcrypt"
 	"log"
+	"log/slog"
 	"strings"
 )
 
@@ -13,7 +13,7 @@ func HashPasswords() {
 	users := *cfg.Users
 	for username, user := range users {
 		if !isHashed(user.Password) {
-			logging.Log.Info.Println("Hashing password for user", username)
+			slog.Info("Hashing password", "username", username)
 			user.Password = GenHash([]byte(user.Password))
 			users[username] = user
 		}

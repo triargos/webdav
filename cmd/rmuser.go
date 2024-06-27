@@ -5,7 +5,7 @@ package cmd
 
 import (
 	"github.com/triargos/webdav/pkg/config"
-	"github.com/triargos/webdav/pkg/logging"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -21,19 +21,22 @@ var rmuserCmd = &cobra.Command{
 		cfg := config.Get()
 		user, ok := (*cfg.Users)[username]
 		if !ok {
-			logging.Log.Error.Fatalf("User %s does not exist", username)
+			slog.Error("Failed to create user, does not exist", "username", username)
+			return
 		}
 		dirPath := filepath.Join(cfg.Content.Dir, user.Root)
 		removeDirErr := os.RemoveAll(dirPath)
 		if removeDirErr != nil {
-			logging.Log.Error.Fatalf("Error removing user root directory: %s\n", removeDirErr)
+			slog.Error("Error removing user directory: %s", removeDirErr)
+			os.Exit(1)
 		}
 		config.RemoveUser(username)
 		err := config.Write()
 		if err != nil {
-			logging.Log.Error.Fatalf("Error writing config: %s\n", err)
+			slog.Error("Failed to write config file:", "error", err.Error())
+			os.Exit(1)
 		}
-		logging.Log.Info.Printf("Removed user %s was successful. Please restart the service for changes to take effect\n", username)
+		slog.Info("Removed user successfully. Please restart the service for changes to take effect", "username", username)
 
 	},
 }

@@ -4,8 +4,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/triargos/webdav/pkg/auth"
 	"github.com/triargos/webdav/pkg/config"
-	"github.com/triargos/webdav/pkg/logging"
 	"github.com/triargos/webdav/pkg/server"
+	"log/slog"
+	"os"
 )
 
 // startCmd represents the start command
@@ -13,20 +14,21 @@ var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start the WebDAV server",
 	Run: func(cmd *cobra.Command, args []string) {
-		logging.Log.Info.Println("Creating user directories...")
+		slog.Info("Starting server...")
+		slog.Info("Creating user directories...")
 		server.CreateUserDirectories()
-		logging.Log.Info.Println("User directories created successfully")
-		logging.Log.Info.Println("Hashing non-hashed passwords...")
+		slog.Info("Hashing passwords...")
 		auth.HashPasswords()
 		err := config.Write()
 		if err != nil {
-			logging.Log.Error.Fatalf("Error writing config: %s\n", err)
+			slog.Error("Failed to write configuration to disk:", "error", err.Error())
+			os.Exit(1)
 		}
-		logging.Log.Info.Println("Passwords hashed successfully")
-		logging.Log.Info.Println("Starting server...")
+		slog.Info("Starting http handler...")
 		err = server.StartWebdavServer()
 		if err != nil {
-			logging.Log.Error.Fatalf("Error starting server: %s\n", err)
+			slog.Error("Failed to start http handler:", "error", err.Error())
+			os.Exit(1)
 		}
 	},
 }

@@ -3,8 +3,7 @@ package cmd
 import (
 	"github.com/triargos/webdav/pkg/config"
 	"github.com/triargos/webdav/pkg/fs"
-	"github.com/triargos/webdav/pkg/logging"
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -28,14 +27,14 @@ func init() {
 	if !fs.PathExists("/etc/webdav") {
 		err := os.Mkdir("/etc/webdav", 0755)
 		if err != nil {
-			log.Fatalf("Error creating /etc/webdav directory: %s\n", err)
+			slog.Error("Failed to create config directory:", "error", err.Error())
+			os.Exit(1)
 		}
 	}
-	logging.InitLoggers()
-	logging.Log.Info.Println("Logging initialized")
 	err := config.Read()
 	if err != nil {
-		logging.Log.Error.Fatalf("Error reading config: %s\n", err)
+		slog.Error("Failed to read config file:", "error", err.Error())
+		os.Exit(1)
 	}
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

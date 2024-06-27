@@ -6,8 +6,8 @@ import (
 	"github.com/triargos/webdav/pkg/config"
 	"github.com/triargos/webdav/pkg/fs"
 	"github.com/triargos/webdav/pkg/handler"
-	"github.com/triargos/webdav/pkg/logging"
 	"golang.org/x/net/webdav"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,9 +17,9 @@ import (
 
 func webdavLogger(req *http.Request, err error) {
 	if err != nil {
-		logging.Log.Error.Println(err)
+		slog.Error("REQ", "method", req.Method, "path", req.URL.Path, "error", err)
 	} else {
-		logging.Log.Info.Println(req.Method, req.URL.Path)
+		slog.Info("REQ", "method", req.Method, "path", req.URL.Path)
 	}
 
 }
@@ -29,7 +29,7 @@ func StartWebdavServer() error {
 	dir := cfg.Content.Dir
 
 	if !fs.PathExists(dir) {
-		logging.Log.Info.Println("Creating data directory...")
+		slog.Info("Creating data directory", "path", dir)
 		err := os.Mkdir(dir, 0755)
 		if err != nil {
 			return err
@@ -38,23 +38,23 @@ func StartWebdavServer() error {
 	address := fmt.Sprintf("%s:%s", cfg.Network.Address, cfg.Network.Port)
 	fileSystem := handler.NewWebdavFs(webdav.Dir(dir))
 	if fileSystem == nil {
-		logging.Log.Error.Println("Failed to create file system")
+		slog.Error("Failed to create file system")
 		return os.ErrInvalid
 	}
 
 	webdavSrv := handler.NewWebdavHandler(fileSystem, webdav.NewMemLS(), webdavLogger)
 	http.Handle("/", auth.Middleware(webdavSrv))
 	go func() {
-		logging.Log.Info.Printf("WebDAV server started on %s\n", address)
+		slog.Info("Starting server", "address", address)
 		if err := http.ListenAndServe(address, nil); err != nil {
-			logging.Log.Error.Printf("Error starting server: %s\n", err)
+			slog.Error("Failed to start server", "error", err)
 		}
 	}()
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	logging.Log.Info.Println("Server is shutting down...")
+	slog.Info("Shutting down server...")
 	time.Sleep(1 * time.Second)
-	logging.Log.Info.Println("Server stopped")
+	slog.Info("Server stopped")
 	return nil
 }

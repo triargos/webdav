@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"github.com/triargos/webdav/pkg/logging"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -49,7 +48,6 @@ func TestGenHash(t *testing.T) {
 
 // Test HashPasswords function
 func TestHashPasswords(t *testing.T) {
-	logging.InitLoggers()
 	setupMockUsers(map[string]config.User{
 		"testUser": {
 			Password: "testPassword",

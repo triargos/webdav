@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 	"github.com/spf13/viper"
-	"github.com/triargos/webdav/pkg/logging"
+	"log/slog"
 	"os"
 	"path/filepath"
 )
@@ -115,7 +115,7 @@ func ReadEnv() (string, bool, string) {
 func Read() error {
 	initViper()
 	path := getConfigurationPath()
-	logging.Log.Info.Printf("Reading configuration from %s\n", path)
+	slog.Info("Reading configuration from disk", "path", path)
 	v.SetConfigFile(filepath.Join(path, "config.yaml"))
 	webdavPort, createNoAdminUser, webdavDataDir := ReadEnv()
 	defaultCfg := GenerateDefaultConfig(webdavPort, createNoAdminUser, webdavDataDir)
@@ -125,7 +125,7 @@ func Read() error {
 	readErr := v.ReadInConfig()
 	var configFileNotFoundError viper.ConfigFileNotFoundError
 	if errors.As(readErr, &configFileNotFoundError) {
-		logging.Log.Info.Println("No configuration file found, creating default configuration")
+		slog.Info("Config file not found, writing default config")
 		v.WriteConfig()
 	}
 	return nil
