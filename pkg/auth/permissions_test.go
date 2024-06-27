@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"github.com/triargos/webdav/pkg/logging"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -114,7 +113,6 @@ func TestHasPermission(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logging.InitLoggers()
 			setupMockUsers(tt.users)
 			result := HasPermission(tt.currentPath, tt.username)
 			assert.Equal(t, tt.expected, result)

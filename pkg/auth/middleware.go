@@ -3,7 +3,7 @@ package auth
 import (
 	"context"
 	"github.com/triargos/webdav/pkg/helper"
-	"github.com/triargos/webdav/pkg/logging"
+	"log/slog"
 	"net/http"
 )
 
@@ -13,18 +13,18 @@ func Middleware(next http.Handler) http.Handler {
 		ctx := context.WithValue(request.Context(), helper.UserNameContextKey, username)
 		if !ok {
 			writer.Header().Set("WWW-Authenticate", `Basic realm="WebDAV"`)
-			logging.Log.Error.Printf("Unauthorized access attempt from %s\n: No credentials", request.RemoteAddr)
+			slog.Error("Unauthorized access attempt: No credentials provided", "remote_addr", request.RemoteAddr)
 			http.Error(writer, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 		if !AuthenticateUser(username, password) {
-			logging.Log.Error.Printf("Unauthorized access attempt from %s\n: Invalid credentials", request.RemoteAddr)
+			slog.Error("Unauthorized access attempt: Invalid credentials", "remote_addr", request.RemoteAddr, "username", username)
 			http.Error(writer, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
 		if !HasPermission(request.URL.Path, username) {
-			logging.Log.Error.Printf("Forbidden access attempt from %s\n", request.RemoteAddr)
+			slog.Error("Forbidden access attempt", "remote_addr", request.RemoteAddr, "username", username, "path", request.URL.Path)
 			http.Error(writer, "Forbidden", http.StatusForbidden)
 			return
 		}

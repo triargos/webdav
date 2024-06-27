@@ -3,8 +3,8 @@ package cmd
 import (
 	"github.com/triargos/webdav/pkg/auth"
 	"github.com/triargos/webdav/pkg/config"
-	"github.com/triargos/webdav/pkg/logging"
 	"github.com/triargos/webdav/pkg/server"
+	"log/slog"
 
 	"github.com/spf13/cobra"
 )
@@ -29,10 +29,11 @@ var adduserCmd = &cobra.Command{
 		})
 		err := config.Write()
 		if err != nil {
-			logging.Log.Error.Fatalf("Error writing config: %s\n", err)
+			slog.Error("Failed to write config file:", "error", err.Error())
 		}
 		server.CreateUserDirectories()
-		logging.Log.Info.Printf("User %s added successfully. Please restart the service for changes to take effect\n", username)
+		slog.Info("Added users successfully. Please restart the service for changes to take effect", "username", username)
+
 	},
 }
 

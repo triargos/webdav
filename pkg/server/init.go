@@ -3,20 +3,19 @@ package server
 import (
 	"github.com/triargos/webdav/pkg/config"
 	"github.com/triargos/webdav/pkg/fs"
-	"github.com/triargos/webdav/pkg/logging"
+	"log/slog"
 	"os"
 	"path/filepath"
 )
 
 func CreateUserDirectories() {
 	cfg := config.Get()
-
 	for _, user := range *cfg.Users {
 		rootPath := filepath.Join(cfg.Content.Dir, user.Root)
 		if !fs.PathExists(rootPath) {
 			err := os.MkdirAll(rootPath, os.ModePerm)
 			if err != nil {
-				logging.Log.Error.Printf("Error creating user root directory: %s\n", err)
+				slog.Error("Failed to create root directory for user", "path", user.Root, "error", err)
 			}
 		}
 		subDirectories := user.SubDirectories
@@ -25,7 +24,7 @@ func CreateUserDirectories() {
 			if !fs.PathExists(subDirectoryPath) {
 				err := os.MkdirAll(subDirectoryPath, os.ModePerm)
 				if err != nil {
-					logging.Log.Error.Printf("Error creating user subdirectory: %s\n", err)
+					slog.Error("Failed to create subdirectory for user", "path", dir, "error", err)
 				}
 			}
 		}
