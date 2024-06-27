@@ -44,7 +44,7 @@ func getConfigurationPath() string {
 
 }
 
-var defaultConfig = Config{
+var configTemplate = Config{
 	Network: &NetworkConfig{
 		Address: "0.0.0.0",
 		Port:    "8080",
@@ -64,9 +64,32 @@ var defaultConfig = Config{
 	},
 }
 
+func DeepCopyConfig(original Config) Config {
+	newConfig := Config{
+		Network: &NetworkConfig{
+			Address: original.Network.Address,
+			Port:    original.Network.Port,
+			Prefix:  original.Network.Prefix,
+		},
+		Content: &ContentConfig{
+			Dir: original.Content.Dir,
+		},
+		Users: &map[string]User{},
+	}
+
+	for k, v := range *original.Users {
+		newUser := v
+		(*newConfig.Users)[k] = newUser
+	}
+
+	return newConfig
+}
+
 func Get() *Config {
 	cfg := &Config{}
 	if err := v.Unmarshal(&cfg); err != nil {
+		webdavPort, createNoAdminUser, webdavDataDir := ReadEnv()
+		defaultConfig := GenerateDefaultConfig(webdavPort, createNoAdminUser, webdavDataDir)
 		return &defaultConfig
 	}
 	return cfg
@@ -78,15 +101,27 @@ func Set(cfg *Config) {
 	v.Set("users", cfg.Users)
 }
 
+func initViper() {
+	v.SetConfigType("yaml")
+}
+
+func ReadEnv() (string, bool, string) {
+	webdavPort := os.Getenv("WEBDAV_PORT")
+	createNoAdminUser := os.Getenv("CREATE_ADMIN_USER") == "0" || os.Getenv("CREATE_ADMIN_USER") == "false"
+	webdavDataDir := os.Getenv("WEBDAV_DATA_DIR")
+	return webdavPort, createNoAdminUser, webdavDataDir
+}
+
 func Read() error {
+	initViper()
 	path := getConfigurationPath()
 	logging.Log.Info.Printf("Reading configuration from %s\n", path)
 	v.SetConfigFile(filepath.Join(path, "config.yaml"))
-	//Set default values
-	v.SetDefault("network", defaultConfig.Network)
-	v.SetDefault("content", defaultConfig.Content)
-	v.SetDefault("users", defaultConfig.Users)
-	v.SetConfigType("yaml")
+	webdavPort, createNoAdminUser, webdavDataDir := ReadEnv()
+	defaultCfg := GenerateDefaultConfig(webdavPort, createNoAdminUser, webdavDataDir)
+	v.SetDefault("network", defaultCfg.Network)
+	v.SetDefault("content", defaultCfg.Content)
+	v.SetDefault("users", defaultCfg.Users)
 	readErr := v.ReadInConfig()
 	var configFileNotFoundError viper.ConfigFileNotFoundError
 	if errors.As(readErr, &configFileNotFoundError) {
@@ -96,12 +131,18 @@ func Read() error {
 	return nil
 }
 
-func WriteDefaultConfig() error {
-	v.AddConfigPath(getConfigurationPath())
-	v.Set("network", defaultConfig.Network)
-	v.Set("content", defaultConfig.Content)
-	v.Set("users", defaultConfig.Users)
-	return v.SafeWriteConfig()
+func GenerateDefaultConfig(webdavPort string, createNoAdminUser bool, webdavDataDir string) Config {
+	defaultConfig := DeepCopyConfig(configTemplate)
+	if webdavPort != "" {
+		defaultConfig.Network.Port = webdavPort
+	}
+	if createNoAdminUser {
+		defaultConfig.Users = &map[string]User{}
+	}
+	if webdavDataDir != "" {
+		defaultConfig.Content.Dir = webdavDataDir
+	}
+	return defaultConfig
 }
 
 func AddUser(username string, user User) {
