@@ -12,6 +12,7 @@ _webdav-go_ is a simple WebDAV server that provides the following features:
 
 - [Configuration](#configuration)
     * [First steps](#first-steps)
+    * [Additional configuration](#additional-configuration)
     * [User management](#user-management)
     * [Persisting data](#persisting-data)
     * [TLS](#tls)
@@ -53,16 +54,29 @@ If you want to add them programmatically, add them
 via `webdav-go adduser -u [USERNAME] -p [PASSWORD] -d [ROOT_DIRECTORY] [...OPTIONAL ARGS]`. The password will be hashed
 on the fly.
 
-
 With this configuration you'll grant access for an `admin` user (with the password `admin`) and the WebDAV
 server is available under `http://127.0.0.1:8080/`.
 
+### Additional configuration
+
+You can modify the configuration file generated on first startup by specifying the following environment variables:
+
+- `WEBDAV_PORT` - the port the server will listen on
+- `CREATE_ADMIN_USER` - Set this to "0" or "false" to prevent auto-creation of the admin user
+- `WEBDAV_DATA_DIR` - the directory where the user data will be stored
+
+Please note that if you specify a custom configuration file, the environment variables will be ignored.
+
+
 ### User management
+
 When adding users, you can specify the following options in the configuration
+
 - `root` - the root directory of the user (mandatory)
 - `admin` - a boolean flag that specifies if the user is an admin. No permissions will be checked (optional)
 - `password` - the password of the user (mandatory). This will be hashed on startup
-- `jailed` - a boolean value that specifies if the user should be jailed to his root directory and subdirectories (optional)
+- `jailed` - a boolean value that specifies if the user should be jailed to his root directory and subdirectories (
+  optional)
 - `sub_directories` - a list of subdirectories that will be created for the user (optional)
 
 Users that are non-admin are forbidden to access other users root directories and subdirectories by default.

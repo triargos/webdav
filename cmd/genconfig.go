@@ -15,7 +15,10 @@ var genconfigCmd = &cobra.Command{
 		logging.Log.Info.Println("Generating config...")
 		reset, _ := cmd.Flags().GetBool("reset")
 		if reset {
-			err := config.WriteDefaultConfig()
+			webdavPort, createNoAdminUser, webdavDataDir := config.ReadEnv()
+			newConfig := config.GenerateDefaultConfig(webdavPort, createNoAdminUser, webdavDataDir)
+			config.Set(&newConfig)
+			err := config.Write()
 			if err != nil {
 				logging.Log.Error.Fatalf("Error writing default config: %s\n", err)
 			}
