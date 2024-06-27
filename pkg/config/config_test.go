@@ -2,7 +2,6 @@ package config
 
 import (
 	"github.com/spf13/viper"
-	"github.com/triargos/webdav/pkg/logging"
 	"os"
 	"testing"
 
@@ -243,7 +242,6 @@ func TestWriteDefaultConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logging.InitLoggers()
 			newConfig := GenerateDefaultConfig(tt.webdavPort, tt.createNoAdminUser, tt.webdavDataDir)
 			assert.Equal(t, tt.expectedNetwork, newConfig.Network)
 			assert.Equal(t, tt.expectedContent, newConfig.Content)
