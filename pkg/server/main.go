@@ -33,17 +33,6 @@ type StartWebdavServerContainer struct {
 
 func StartWebdavServer(container StartWebdavServerContainer) error {
 	configurationValue := container.ConfigService.Get()
-	directory := configurationValue.Content.Dir
-	createDirectoryErr := os.MkdirAll(directory, 0755)
-	if createDirectoryErr != nil {
-		return fmt.Errorf("failed to create content directory: %v", createDirectoryErr)
-	}
-	for _, subdirectory := range configurationValue.Content.SubDirectories {
-		makeSubDirErr := container.FsService.CreateDirectories(fmt.Sprintf("%s/%s", directory, subdirectory), 0755)
-		if makeSubDirErr != nil {
-			slog.Error("failed to create subdirectory", "subdirectory", subdirectory, "error", makeSubDirErr)
-		}
-	}
 	address := fmt.Sprintf("%s:%s", configurationValue.Network.Address, configurationValue.Network.Port)
 	webdavSrv := handler.NewWebdavHandler(container.WebdavFileSystem, webdav.NewMemLS(), webdavLogger)
 	http.Handle("/", auth.Middleware(container.AuthService)(webdavSrv))

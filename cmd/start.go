@@ -23,6 +23,19 @@ var startCmd = &cobra.Command{
 		configService := config.NewViperConfigService(environment.NewOsEnvironmentService())
 		fsService := fs.NewOsFileSystemService()
 		userService := user.NewOsUserService(configService, fsService)
+		slog.Info("Creating system and content directories...")
+		contentDir := configService.Get().Content.Dir
+		createDirectoriesErr := fsService.CreateDirectories(contentDir, 0755)
+		if createDirectoriesErr != nil {
+			slog.Error("Failed to create content directory", "error", createDirectoriesErr.Error())
+			os.Exit(1)
+		}
+		for _, subirectory := range configService.Get().Content.SubDirectories {
+			createSubDirectoryErr := fsService.CreateDirectories(contentDir+"/"+subirectory, 0755)
+			if createSubDirectoryErr != nil {
+				slog.Error("Failed to create subdirectory", "error", createSubDirectoryErr.Error())
+			}
+		}
 		slog.Info("Creating all user directories...")
 		createDirectoryErr := userService.InitializeDirectories()
 		if createDirectoryErr != nil {
@@ -35,6 +48,7 @@ var startCmd = &cobra.Command{
 			slog.Error("Failed to hash passwords", "error", hashPasswordsErr.Error())
 			os.Exit(1)
 		}
+
 		slog.Info("Starting webdav server...")
 		authService := auth.New(userService)
 		webdavFileSystem := handler.NewWebdavFs(webdav.Dir(configService.Get().Content.Dir), authService)
@@ -46,6 +60,7 @@ var startCmd = &cobra.Command{
 			ConfigService:    configService,
 			WebdavFileSystem: webdavFileSystem,
 			AuthService:      authService,
+			FsService:        fsService,
 		})
 		if startServerErr != nil {
 			slog.Error("Failed to start webdav server", "error", startServerErr.Error())
