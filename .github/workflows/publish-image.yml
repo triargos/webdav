@@ -28,6 +28,9 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
+      - name: Verify module integrity
+        run: go mod tidy
+
       - name: Run tests
         run: go test -v ./...
   release:
