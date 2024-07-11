@@ -13,7 +13,8 @@ type NetworkConfig struct {
 }
 
 type ContentConfig struct {
-	Dir string `mapstructure:"dir"`
+	Dir            string   `mapstructure:"dir"`
+	SubDirectories []string `mapstructure:"subdirectories,omitempty"`
 }
 
 type User struct {
@@ -31,7 +32,8 @@ var configTemplate = Config{
 		Prefix:  "/",
 	},
 	Content: ContentConfig{
-		Dir: "/var/webdav/data",
+		Dir:            "/var/webdav/data",
+		SubDirectories: []string{"documents"},
 	},
 	Users: map[string]User{
 		"admin": {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/triargos/webdav/pkg/auth"
 	"github.com/triargos/webdav/pkg/config"
+	"github.com/triargos/webdav/pkg/fs"
 	"github.com/triargos/webdav/pkg/handler"
 	"golang.org/x/net/webdav"
 	"log/slog"
@@ -27,6 +28,7 @@ type StartWebdavServerContainer struct {
 	ConfigService    config.Service
 	AuthService      auth.Service
 	WebdavFileSystem *handler.WebdavFs
+	FsService        fs.Service
 }
 
 func StartWebdavServer(container StartWebdavServerContainer) error {
@@ -35,6 +37,12 @@ func StartWebdavServer(container StartWebdavServerContainer) error {
 	createDirectoryErr := os.MkdirAll(directory, 0755)
 	if createDirectoryErr != nil {
 		return fmt.Errorf("failed to create content directory: %v", createDirectoryErr)
+	}
+	for _, subdirectory := range configurationValue.Content.SubDirectories {
+		makeSubDirErr := container.FsService.CreateDirectories(fmt.Sprintf("%s/%s", directory, subdirectory), 0755)
+		if makeSubDirErr != nil {
+			slog.Error("failed to create subdirectory", "subdirectory", subdirectory, "error", makeSubDirErr)
+		}
 	}
 	address := fmt.Sprintf("%s:%s", configurationValue.Network.Address, configurationValue.Network.Port)
 	webdavSrv := handler.NewWebdavHandler(container.WebdavFileSystem, webdav.NewMemLS(), webdavLogger)

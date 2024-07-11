@@ -70,6 +70,11 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: triargos/webdav-go
+          tags: |
+            type=ref,event=branch,branch=main,tag=latest
+            type=ref,event=branch,branch=dev,tag=latest-dev
+            type=sha
+
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
