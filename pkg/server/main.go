@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/triargos/webdav/pkg/auth"
 	"github.com/triargos/webdav/pkg/config"
-	"github.com/triargos/webdav/pkg/fs"
 	"github.com/triargos/webdav/pkg/handler"
 	"golang.org/x/net/webdav"
 	"log/slog"
@@ -24,26 +23,22 @@ func webdavLogger(req *http.Request, err error) {
 
 }
 
-func StartWebdavServer() error {
-	cfg := config.Get()
-	dir := cfg.Content.Dir
+type StartWebdavServerContainer struct {
+	ConfigService    config.Service
+	AuthService      auth.Service
+	WebdavFileSystem *handler.WebdavFs
+}
 
-	if !fs.PathExists(dir) {
-		slog.Info("Creating data directory", "path", dir)
-		err := os.Mkdir(dir, 0755)
-		if err != nil {
-			return err
-		}
+func StartWebdavServer(container StartWebdavServerContainer) error {
+	configurationValue := container.ConfigService.Get()
+	directory := configurationValue.Content.Dir
+	createDirectoryErr := os.MkdirAll(directory, 0755)
+	if createDirectoryErr != nil {
+		return fmt.Errorf("failed to create content directory: %v", createDirectoryErr)
 	}
-	address := fmt.Sprintf("%s:%s", cfg.Network.Address, cfg.Network.Port)
-	fileSystem := handler.NewWebdavFs(webdav.Dir(dir))
-	if fileSystem == nil {
-		slog.Error("Failed to create file system")
-		return os.ErrInvalid
-	}
-
-	webdavSrv := handler.NewWebdavHandler(fileSystem, webdav.NewMemLS(), webdavLogger)
-	http.Handle("/", auth.Middleware(webdavSrv))
+	address := fmt.Sprintf("%s:%s", configurationValue.Network.Address, configurationValue.Network.Port)
+	webdavSrv := handler.NewWebdavHandler(container.WebdavFileSystem, webdav.NewMemLS(), webdavLogger)
+	http.Handle("/", auth.Middleware(container.AuthService)(webdavSrv))
 	go func() {
 		slog.Info("Starting server", "address", address)
 		if err := http.ListenAndServe(address, nil); err != nil {

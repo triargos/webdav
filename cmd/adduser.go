@@ -1,10 +1,12 @@
 package cmd
 
 import (
-	"github.com/triargos/webdav/pkg/auth"
 	"github.com/triargos/webdav/pkg/config"
-	"github.com/triargos/webdav/pkg/server"
+	"github.com/triargos/webdav/pkg/environment"
+	"github.com/triargos/webdav/pkg/fs"
+	"github.com/triargos/webdav/pkg/user"
 	"log/slog"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -20,20 +22,20 @@ var adduserCmd = &cobra.Command{
 		dir := cmd.Flag("dir").Value.String()
 		jailed, _ := cmd.Flags().GetBool("jailed")
 		subdirectories, _ := cmd.Flags().GetStringArray("subdirs")
-		config.AddUser(username, config.User{
-			Password:       auth.GenHash([]byte(password)),
+		configService := config.NewViperConfigService(environment.NewOsEnvironmentService())
+		fsService := fs.NewOsFileSystemService()
+		userService := user.NewOsUserService(configService, fsService)
+		addUserErr := userService.AddUser(username, config.User{
+			Password:       password,
 			Admin:          admin,
 			SubDirectories: subdirectories,
 			Jail:           jailed,
 			Root:           dir,
 		})
-		err := config.Write()
-		if err != nil {
-			slog.Error("Failed to write config file:", "error", err.Error())
+		if addUserErr != nil {
+			slog.Error("failed to add user", "error", addUserErr.Error())
+			os.Exit(1)
 		}
-		server.CreateUserDirectories()
-		slog.Info("Added users successfully. Please restart the service for changes to take effect", "username", username)
-
 	},
 }
 
