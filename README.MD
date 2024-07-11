@@ -46,8 +46,7 @@ users:
     admin: true
 ```
 
-You can always regenerate this by executing `webdav-go` genconfig. If you specifiy the `--reset`, flag, it will
-overwrite your existing configuration file.
+You can always regenerate this by executing `webdav-go resetconfig`. This will override your existing configuration file
 
 If you add users, you can specify the password in plain text. The server will hash them on startup.
 If you want to add them programmatically, add them

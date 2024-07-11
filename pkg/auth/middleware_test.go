@@ -1,6 +1,8 @@
-package auth
+package auth_test
 
 import (
+	"github.com/triargos/webdav/mocks"
+	"github.com/triargos/webdav/pkg/auth"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -26,6 +28,16 @@ func TestMiddleware(t *testing.T) {
 			name: "Valid credentials and permission",
 			users: map[string]config.User{
 				"user1": {Password: string(hash), Admin: true},
+			},
+			username:       "user1",
+			password:       password,
+			urlPath:        "/Finanzen/mydir",
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "Non-admin user with valid credentials and permission",
+			users: map[string]config.User{
+				"user1": {Password: string(hash), Admin: false},
 			},
 			username:       "user1",
 			password:       password,
@@ -66,23 +78,18 @@ func TestMiddleware(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setupMockUsers(tt.users)
-
 			req, err := http.NewRequest("GET", tt.urlPath, nil)
 			assert.NoError(t, err)
-
 			if tt.username != "" && tt.password != "" {
 				req.SetBasicAuth(tt.username, tt.password)
 			}
-
 			rr := httptest.NewRecorder()
-
-			handler := Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			userService := mocks.NewMockUserService(tt.users)
+			authenticationService := auth.New(userService)
+			handler := auth.Middleware(authenticationService)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 			}))
-
 			handler.ServeHTTP(rr, req)
-
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 		})
 	}

@@ -2,7 +2,7 @@ services:
 
   webdav:
     container_name: webdav
-    image: triargos/webdav-go
+    image: triargos/webdav-go:test
     ports:
       - "8081:8080"
     volumes:
