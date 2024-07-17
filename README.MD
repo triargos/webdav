@@ -26,9 +26,10 @@ The configuration is done in form of a yaml file. The program will scan for the 
 - `/etc/webdav/config/config.yaml` when the `DOCKER_ENABLED` environment variable is set to 1
 - `./config/config.yaml` when the `DOCKER_ENABLED` environment variable is not set or is 0
 
-
 ### Authentication type
-You can either use basic authentication (not recommended for http) or digest authentication. Please be aware that when using digest authentication, passwords will not be hashed on startup.
+
+You can either use basic authentication (not recommended for http) or digest authentication. Please be aware that when
+using digest authentication, passwords will not be hashed on startup.
 
 ### First steps
 
@@ -66,12 +67,11 @@ server is available under `http://127.0.0.1:8080/`.
 
 You can modify the configuration file generated on first startup by specifying the following environment variables:
 
-- `WEBDAV_PORT` - the port the server will listen on
-- `CREATE_ADMIN_USER` - Set this to "0" or "false" to prevent auto-creation of the admin user
-- `WEBDAV_DATA_DIR` - the directory where the user data will be stored
+- `WEBDAV_PORT` - the port the server will listen on. Default is `8080`
+- `WEBDAV_DATA_DIR` - the directory where the user data will be stored. Default is `/var/webdav/data`
+- `AUTH_TYPE` - the authentication type (basic or digest). Default is basic
 
 Please note that if you specify a custom configuration file, the environment variables will be ignored.
-
 
 ### User management
 

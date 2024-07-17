@@ -86,16 +86,20 @@ func (s *ViperConfigService) Read() *Config {
 	return s.Get()
 }
 
+func isValidAuthType(authType string) bool {
+	return authType == "basic" || authType == "digest"
+}
+
 func (s *ViperConfigService) GenerateDefault(environmentConfig EnvironmentConfig) Config {
 	defaultConfig := DeepCopyConfig(configTemplate)
 	if environmentConfig.WebdavPort != "" {
 		defaultConfig.Network.Port = environmentConfig.WebdavPort
 	}
-	if environmentConfig.CreateNoAdminUser {
-		defaultConfig.Users = map[string]User{}
-	}
 	if environmentConfig.WebdavDataDir != "" {
 		defaultConfig.Content.Dir = environmentConfig.WebdavDataDir
+	}
+	if environmentConfig.AuthType != "" && isValidAuthType(environmentConfig.AuthType) {
+		defaultConfig.Security.AuthType = environmentConfig.AuthType
 	}
 	return defaultConfig
 }
@@ -126,12 +130,12 @@ func (s *ViperConfigService) UpdateUser(username string, user User) {
 
 func (s *ViperConfigService) readEnvironmentConfig() EnvironmentConfig {
 	webdavPort := s.environmentService.Get("WEBDAV_PORT")
-	noAdminUser := s.environmentService.GetBool("CREATE_ADMIN_USER")
 	webdavDataDir := s.environmentService.Get("WEBDAV_DATA_DIR")
+	authType := s.environmentService.Get("AUTH_TYPE")
 	return EnvironmentConfig{
-		WebdavPort:        webdavPort,
-		CreateNoAdminUser: noAdminUser,
-		WebdavDataDir:     webdavDataDir,
+		WebdavPort:    webdavPort,
+		WebdavDataDir: webdavDataDir,
+		AuthType:      authType,
 	}
 }
 
