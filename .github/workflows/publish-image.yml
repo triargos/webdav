@@ -37,7 +37,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    if: github.event_name != 'release'
+    if: github.event_name != 'release' && github.event_name != 'pull_request'
     needs: test
     permissions:
       contents: write
