@@ -25,17 +25,23 @@ func webdavLogger(req *http.Request, err error) {
 }
 
 type StartWebdavServerContainer struct {
-	ConfigService    config.Service
-	AuthService      auth.Service
-	WebdavFileSystem *handler.WebdavFs
-	FsService        fs.Service
+	ConfigService       config.Service
+	AuthService         auth.Service
+	DigestAuthenticator auth.DigestAuthenticator
+	WebdavFileSystem    *handler.WebdavFs
+	FsService           fs.Service
 }
 
 func StartWebdavServer(container StartWebdavServerContainer) error {
 	configurationValue := container.ConfigService.Get()
 	address := fmt.Sprintf("%s:%s", configurationValue.Network.Address, configurationValue.Network.Port)
 	webdavSrv := handler.NewWebdavHandler(container.WebdavFileSystem, webdav.NewMemLS(), webdavLogger)
-	http.Handle("/", auth.Middleware(container.AuthService)(webdavSrv))
+	authType := container.ConfigService.Get().Security.AuthType
+	middleware := auth.BasicAuthMiddleware(container.AuthService)
+	if authType == "digest" {
+		middleware = auth.DigestAuthMiddleware(container.DigestAuthenticator, container.AuthService)
+	}
+	http.Handle("/", middleware(webdavSrv))
 	go func() {
 		slog.Info("Starting server", "address", address)
 		if err := http.ListenAndServe(address, nil); err != nil {

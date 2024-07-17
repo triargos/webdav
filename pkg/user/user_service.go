@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/triargos/webdav/pkg/config"
 	"github.com/triargos/webdav/pkg/fs"
+	"github.com/triargos/webdav/pkg/helper"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"log/slog"
@@ -48,9 +49,32 @@ func (s *OsUserService) createUserDirectories(user config.User, contentRoot stri
 	return nil
 }
 
+func generateBasicHash(password string) string {
+	hash := GenHash([]byte(password))
+	return hash
+}
+
+func generateDigestHash(username, password string) string {
+	hash := helper.Md5Hash(fmt.Sprintf("%s:%s:%s", username, "WebDAV", password))
+	return hash
+}
+func (s *OsUserService) GenerateHash(username, password string) string {
+	authType := s.configService.Get().Security.AuthType
+	switch authType {
+	case "basic":
+		{
+			return generateBasicHash(password)
+		}
+	case "digest":
+		{
+			return generateDigestHash(username, password)
+		}
+	}
+	return ""
+}
+
 func (s *OsUserService) AddUser(username string, user config.User) error {
-	hash := GenHash([]byte(user.Password))
-	user.Password = hash
+	user.Password = s.GenerateHash(username, user.Password)
 	s.configService.AddUser(username, user)
 	writeConfigErr := s.configService.Write()
 	if writeConfigErr != nil {
@@ -106,6 +130,10 @@ func (s *OsUserService) InitializeDirectories() error {
 }
 
 func (s *OsUserService) HashPasswords() error {
+	if s.configService.Get().Security.AuthType != "basic" {
+		slog.Info("skipping password hashing because auth type is not basic")
+		return nil
+	}
 	for username, user := range s.configService.Get().Users {
 		if !isHashed(user.Password) {
 			slog.Info("password for user is not hashed, hashing now", "username", username)
