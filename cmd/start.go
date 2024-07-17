@@ -56,11 +56,13 @@ var startCmd = &cobra.Command{
 			slog.Error("Failed to create webdav filesystem")
 			os.Exit(1)
 		}
+		digestAuthenticator := auth.NewDigestAuthenticator(userService)
 		startServerErr := server.StartWebdavServer(server.StartWebdavServerContainer{
-			ConfigService:    configService,
-			WebdavFileSystem: webdavFileSystem,
-			AuthService:      authService,
-			FsService:        fsService,
+			ConfigService:       configService,
+			WebdavFileSystem:    webdavFileSystem,
+			AuthService:         authService,
+			FsService:           fsService,
+			DigestAuthenticator: digestAuthenticator,
 		})
 		if startServerErr != nil {
 			slog.Error("Failed to start webdav server", "error", startServerErr.Error())

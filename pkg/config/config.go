@@ -1,9 +1,14 @@
 package config
 
 type Config struct {
-	Network NetworkConfig   `mapstructure:"network"`
-	Content ContentConfig   `mapstructure:"content"`
-	Users   map[string]User `mapstructure:"users"`
+	Network  NetworkConfig   `mapstructure:"network"`
+	Content  ContentConfig   `mapstructure:"content"`
+	Users    map[string]User `mapstructure:"users"`
+	Security SecurityConfig  `mapstructure:"security"`
+}
+
+type SecurityConfig struct {
+	AuthType string `mapstructure:"auth_type"`
 }
 
 type NetworkConfig struct {
@@ -35,6 +40,9 @@ var configTemplate = Config{
 		Dir:            "/var/webdav/data",
 		SubDirectories: []string{"documents"},
 	},
+	Security: SecurityConfig{
+		AuthType: "basic",
+	},
 	Users: map[string]User{
 		"admin": {
 			Password:       "admin",
@@ -52,6 +60,9 @@ func DeepCopyConfig(original Config) Config {
 			Address: original.Network.Address,
 			Port:    original.Network.Port,
 			Prefix:  original.Network.Prefix,
+		},
+		Security: SecurityConfig{
+			AuthType: original.Security.AuthType,
 		},
 		Content: ContentConfig{
 			Dir: original.Content.Dir,
