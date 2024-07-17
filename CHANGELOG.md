@@ -1,3 +1,10 @@
+# [3.1.0-dev.2](https://github.com/triargos/webdav/compare/v3.1.0-dev.1...v3.1.0-dev.2) (2024-07-17)
+
+
+### Bug Fixes
+
+* **ci:** do not run release on release ([bc86c28](https://github.com/triargos/webdav/commit/bc86c28386beb191e9a41f6ba7536c38637b13c5))
+
 # [3.1.0-dev.1](https://github.com/triargos/webdav/compare/v3.0.0...v3.1.0-dev.1) (2024-07-17)
 
 
