@@ -8,7 +8,7 @@ type Config struct {
 }
 
 type SecurityConfig struct {
-	AuthType string `mapstructure:"auth_type"`
+	AuthType string `mapstructure:"authtype"`
 }
 
 type NetworkConfig struct {
@@ -43,15 +43,7 @@ var configTemplate = Config{
 	Security: SecurityConfig{
 		AuthType: "basic",
 	},
-	Users: map[string]User{
-		"admin": {
-			Password:       "admin",
-			Admin:          true,
-			Jail:           false,
-			Root:           "/Users/admin",
-			SubDirectories: []string{"documents"},
-		},
-	},
+	Users: map[string]User{},
 }
 
 func DeepCopyConfig(original Config) Config {
@@ -68,11 +60,6 @@ func DeepCopyConfig(original Config) Config {
 			Dir: original.Content.Dir,
 		},
 		Users: map[string]User{},
-	}
-
-	for k, v := range original.Users {
-		newUser := v
-		(newConfig.Users)[k] = newUser
 	}
 
 	return newConfig

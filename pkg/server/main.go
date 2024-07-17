@@ -36,9 +36,9 @@ func StartWebdavServer(container StartWebdavServerContainer) error {
 	configurationValue := container.ConfigService.Get()
 	address := fmt.Sprintf("%s:%s", configurationValue.Network.Address, configurationValue.Network.Port)
 	webdavSrv := handler.NewWebdavHandler(container.WebdavFileSystem, webdav.NewMemLS(), webdavLogger)
-
+	authType := container.ConfigService.Get().Security.AuthType
 	middleware := auth.BasicAuthMiddleware(container.AuthService)
-	if container.ConfigService.Get().Security.AuthType == "digest" {
+	if authType == "digest" {
 		middleware = auth.DigestAuthMiddleware(container.DigestAuthenticator, container.AuthService)
 	}
 	http.Handle("/", middleware(webdavSrv))
