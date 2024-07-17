@@ -57,6 +57,7 @@ func (s *ViperConfigService) Set(cfg *Config) {
 	s.viperInstance.Set("network", cfg.Network)
 	s.viperInstance.Set("content", cfg.Content)
 	s.viperInstance.Set("users", cfg.Users)
+	s.viperInstance.Set("security", cfg.Security)
 }
 
 func (s *ViperConfigService) Write() error {
@@ -72,6 +73,7 @@ func (s *ViperConfigService) Read() *Config {
 	s.viperInstance.SetDefault("network", defaultConfig.Network)
 	s.viperInstance.SetDefault("content", defaultConfig.Content)
 	s.viperInstance.SetDefault("users", defaultConfig.Users)
+	s.viperInstance.SetDefault("security", defaultConfig.Security)
 	readFileErr := s.viperInstance.ReadInConfig()
 	if readFileErr != nil {
 		slog.Info("Config file not found, writing default config")

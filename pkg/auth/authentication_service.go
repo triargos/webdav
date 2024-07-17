@@ -3,7 +3,6 @@ package auth
 import (
 	"github.com/triargos/webdav/pkg/user"
 	"golang.org/x/crypto/bcrypt"
-	"log/slog"
 	"strings"
 )
 
@@ -12,15 +11,15 @@ type Service interface {
 	HasPermission(path string, username string) bool
 }
 
-type ServiceImpl struct {
+type BasicAuthenticator struct {
 	userService user.Service
 }
 
 func New(userService user.Service) Service {
-	return &ServiceImpl{userService: userService}
+	return &BasicAuthenticator{userService: userService}
 }
 
-func (s *ServiceImpl) Authenticate(username, password string) bool {
+func (s *BasicAuthenticator) Authenticate(username, password string) bool {
 	if !s.userService.HasUser(username) {
 		return false
 	}
@@ -29,8 +28,7 @@ func (s *ServiceImpl) Authenticate(username, password string) bool {
 	return verifyPasswordErr == nil
 }
 
-func (s *ServiceImpl) HasPermission(path string, username string) bool {
-	slog.Info("User has permission", "path", path, "username", username)
+func (s *BasicAuthenticator) HasPermission(path string, username string) bool {
 	if !s.userService.HasUser(username) {
 		return false
 	}
@@ -45,6 +43,7 @@ func (s *ServiceImpl) HasPermission(path string, username string) bool {
 		if otherUsername == username {
 			continue
 		}
+
 		if otherUser.Root != "" && isSubPath(otherUser.Root, path) {
 			return false
 		}
@@ -56,5 +55,5 @@ func (s *ServiceImpl) HasPermission(path string, username string) bool {
 func isSubPath(parent, child string) bool {
 	parent = strings.TrimSuffix(parent, "/") + "/"
 	child = strings.TrimSuffix(child, "/") + "/"
-	return strings.HasPrefix(child, parent)
+	return strings.HasPrefix(strings.ToLower(child), strings.ToLower(parent))
 }
