@@ -12,9 +12,5 @@
     "@semantic-release/changelog",
     "@semantic-release/github",
     "@semantic-release/git",
-    {
-      "path": "@semantic-release/exec",
-      "cmd": "echo 'New version: ${nextRelease.version}'"
-    }
-  ]
+   ]
 }
