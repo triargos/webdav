@@ -1,8 +1,10 @@
 package config
 
 import (
-	"github.com/spf13/viper"
+	"fmt"
 	"github.com/triargos/webdav/pkg/environment"
+	"github.com/triargos/webdav/pkg/fs"
+	"gopkg.in/yaml.v3"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -25,15 +27,13 @@ type Service interface {
 	readEnvironmentConfig() EnvironmentConfig
 }
 
-type ViperConfigService struct {
-	viperInstance      *viper.Viper
+type ConfigService struct {
 	environmentService environment.Service
+	fileSystemHandler  fs.Service
 }
 
-func NewViperConfigService(environmentService environment.Service) Service {
-	v := viper.NewWithOptions(viper.KeyDelimiter("::"))
-	v.SetConfigType("yaml")
-	service := ViperConfigService{viperInstance: v, environmentService: environmentService}
+func NewConfigService(environmentService environment.Service, fileSystemHandler fs.Service) Service {
+	service := ConfigService{environmentService: environmentService, fileSystemHandler: fileSystemHandler}
 	createDirectoryErr := service.CreateConfigDirectory()
 	if createDirectoryErr != nil {
 		slog.Error("Failed to create config directory", "error", createDirectoryErr)
@@ -43,41 +43,44 @@ func NewViperConfigService(environmentService environment.Service) Service {
 	return &service
 }
 
-func (s *ViperConfigService) Get() *Config {
-	cfg := &Config{}
-	if err := s.viperInstance.Unmarshal(&cfg); err != nil {
-		envConfig := s.readEnvironmentConfig()
-		defaultConfig := s.GenerateDefault(envConfig)
-		return &defaultConfig
+var currentConfig *Config
+
+func (s *ConfigService) Get() *Config {
+	if currentConfig != nil {
+		return currentConfig
 	}
-	return cfg
+	return s.Read()
 }
 
-func (s *ViperConfigService) Set(cfg *Config) {
-	s.viperInstance.Set("network", cfg.Network)
-	s.viperInstance.Set("content", cfg.Content)
-	s.viperInstance.Set("users", cfg.Users)
-	s.viperInstance.Set("security", cfg.Security)
+func (s *ConfigService) Set(cfg *Config) {
+	currentConfig = cfg
 }
 
-func (s *ViperConfigService) Write() error {
-	return s.viperInstance.WriteConfig()
-}
-
-func (s *ViperConfigService) Read() *Config {
+func (s *ConfigService) Write() error {
 	configPath := s.getConfigurationPath()
-	s.viperInstance.SetConfigFile(filepath.Join(configPath, "config.yaml"))
+	marshalled, marshalError := yaml.Marshal(s.Get())
+	if marshalError != nil {
+		return fmt.Errorf("failed to marshal config: %w", marshalError)
+	}
+	writeFileErr := s.fileSystemHandler.WriteFileContent(configPath, marshalled, 0644)
+	if writeFileErr != nil {
+		return fmt.Errorf("failed to write config file: %w", writeFileErr)
+	}
+	return nil
+}
+
+func (s *ConfigService) Read() *Config {
+	configPath := s.getConfigurationPath()
 	environmentConfig := s.readEnvironmentConfig()
 
 	defaultConfig := s.GenerateDefault(environmentConfig)
-	s.viperInstance.SetDefault("network", defaultConfig.Network)
-	s.viperInstance.SetDefault("content", defaultConfig.Content)
-	s.viperInstance.SetDefault("users", defaultConfig.Users)
-	s.viperInstance.SetDefault("security", defaultConfig.Security)
-	readFileErr := s.viperInstance.ReadInConfig()
-	if readFileErr != nil {
+	currentConfig = &defaultConfig
+	fileContents, readFileErr := s.fileSystemHandler.ReadFileContent(configPath)
+	unmarshalErr := yaml.Unmarshal(fileContents, currentConfig)
+
+	if readFileErr != nil || unmarshalErr != nil {
 		slog.Info("Config file not found, writing default config")
-		writeDefaultConfigErr := s.viperInstance.WriteConfig()
+		writeDefaultConfigErr := s.Write()
 		if writeDefaultConfigErr != nil {
 			slog.Error("Failed to write default config", "error", writeDefaultConfigErr)
 			os.Exit(1)
@@ -86,7 +89,7 @@ func (s *ViperConfigService) Read() *Config {
 	return s.Get()
 }
 
-func (s *ViperConfigService) GenerateDefault(environmentConfig EnvironmentConfig) Config {
+func (s *ConfigService) GenerateDefault(environmentConfig EnvironmentConfig) Config {
 	defaultConfig := DeepCopyConfig(configTemplate)
 	if environmentConfig.WebdavPort != "" {
 		defaultConfig.Network.Port = environmentConfig.WebdavPort
@@ -100,31 +103,31 @@ func (s *ViperConfigService) GenerateDefault(environmentConfig EnvironmentConfig
 	return defaultConfig
 }
 
-func (s *ViperConfigService) getConfigurationPath() string {
+func (s *ConfigService) getConfigurationPath() string {
 	defaultConfigPath := "/etc/webdav/"
 	if s.environmentService.GetBool("DOCKER_ENABLED") == false {
 		defaultConfigPath = "./config"
 	}
-	return defaultConfigPath
+	return filepath.Join(defaultConfigPath, "config.yaml")
 }
 
-func (s *ViperConfigService) AddUser(username string, user User) {
+func (s *ConfigService) AddUser(username string, user User) {
 	currentUsers := s.Get().Users
 	currentUsers[username] = user
-	s.viperInstance.Set("users", currentUsers)
+	currentConfig.Users = currentUsers
 }
 
-func (s *ViperConfigService) RemoveUser(username string) {
+func (s *ConfigService) RemoveUser(username string) {
 	currentUsers := s.Get().Users
 	delete(currentUsers, username)
-	s.viperInstance.Set("users", currentUsers)
+	currentConfig.Users = currentUsers
 }
 
-func (s *ViperConfigService) UpdateUser(username string, user User) {
+func (s *ConfigService) UpdateUser(username string, user User) {
 	s.AddUser(username, user)
 }
 
-func (s *ViperConfigService) readEnvironmentConfig() EnvironmentConfig {
+func (s *ConfigService) readEnvironmentConfig() EnvironmentConfig {
 	webdavPort := s.environmentService.Get("WEBDAV_PORT")
 	noAdminUser := s.environmentService.GetBool("CREATE_ADMIN_USER")
 	webdavDataDir := s.environmentService.Get("WEBDAV_DATA_DIR")
@@ -135,12 +138,12 @@ func (s *ViperConfigService) readEnvironmentConfig() EnvironmentConfig {
 	}
 }
 
-func (s *ViperConfigService) CreateConfigDirectory() error {
+func (s *ConfigService) CreateConfigDirectory() error {
 	configPath := s.getConfigurationPath()
-	return os.MkdirAll(configPath, os.ModePerm)
+	return os.MkdirAll(filepath.Dir(configPath), os.ModePerm)
 }
 
-func (s *ViperConfigService) Reset() error {
+func (s *ConfigService) Reset() error {
 	environmentConfig := s.readEnvironmentConfig()
 	defaultConfig := s.GenerateDefault(environmentConfig)
 	s.Set(&defaultConfig)

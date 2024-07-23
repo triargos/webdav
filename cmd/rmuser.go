@@ -18,9 +18,10 @@ var rmuserCmd = &cobra.Command{
 	Use:   "rmuser",
 	Short: "Remove a user from the webdav server configuration",
 	Run: func(cmd *cobra.Command, args []string) {
-		configService := config.NewViperConfigService(environment.NewOsEnvironmentService())
-		username := cmd.Flag("username").Value.String()
 		fsService := fs.NewOsFileSystemService()
+		configService := config.NewConfigService(environment.NewOsEnvironmentService(), fsService)
+		username := cmd.Flag("username").Value.String()
+
 		userService := user.NewOsUserService(configService, fsService)
 		removeUserErr := userService.RemoveUser(username)
 		if removeUserErr != nil {
