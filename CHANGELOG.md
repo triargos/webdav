@@ -1,3 +1,12 @@
+## [3.1.1-dev.1](https://github.com/triargos/webdav/compare/v3.1.0...v3.1.1-dev.1) (2024-07-23)
+
+
+### Bug Fixes
+
+* **ci:** update action ([0940685](https://github.com/triargos/webdav/commit/0940685f4d9ebab570312b7df9f6a1e95b4e9114))
+* **ci:** update action ([e96bd16](https://github.com/triargos/webdav/commit/e96bd16c2d8742aabea074aef2886f58f36b26e6))
+* **config:** remove viper ([cf3c9f2](https://github.com/triargos/webdav/commit/cf3c9f27d6fd5fc9861878c667a69772e69dc3da))
+
 # [3.1.0-dev.3](https://github.com/triargos/webdav/compare/v3.1.0-dev.2...v3.1.0-dev.3) (2024-07-17)
 
 
