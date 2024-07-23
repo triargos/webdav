@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/triargos/webdav/pkg/config"
 	"github.com/triargos/webdav/pkg/environment"
+	"github.com/triargos/webdav/pkg/fs"
 	"log/slog"
 	"os"
 
@@ -14,7 +15,7 @@ var genconfigCmd = &cobra.Command{
 	Short: "Reset the current config to the default values",
 	Long:  "Resets the current configuration file to the defaults specified in the github repository",
 	Run: func(cmd *cobra.Command, args []string) {
-		configService := config.NewViperConfigService(environment.NewOsEnvironmentService())
+		configService := config.NewConfigService(environment.NewOsEnvironmentService(), fs.NewOsFileSystemService())
 		slog.Info("resetting configuration file")
 		resetConfigErr := configService.Reset()
 		if resetConfigErr != nil {

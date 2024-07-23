@@ -20,8 +20,9 @@ var startCmd = &cobra.Command{
 	Short: "Start the WebDAV server",
 	Run: func(cmd *cobra.Command, args []string) {
 		slog.Info("Initializing webdav server...")
-		configService := config.NewViperConfigService(environment.NewOsEnvironmentService())
 		fsService := fs.NewOsFileSystemService()
+		configService := config.NewConfigService(environment.NewOsEnvironmentService(), fsService)
+
 		userService := user.NewOsUserService(configService, fsService)
 		slog.Info("Creating system and content directories...")
 		contentDir := configService.Get().Content.Dir

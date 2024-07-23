@@ -21,9 +21,10 @@ var adduserCmd = &cobra.Command{
 		admin, _ := cmd.Flags().GetBool("admin")
 		dir := cmd.Flag("dir").Value.String()
 		jailed, _ := cmd.Flags().GetBool("jailed")
-		subdirectories, _ := cmd.Flags().GetStringArray("subdirs")
-		configService := config.NewViperConfigService(environment.NewOsEnvironmentService())
 		fsService := fs.NewOsFileSystemService()
+		subdirectories, _ := cmd.Flags().GetStringArray("subdirs")
+		configService := config.NewConfigService(environment.NewOsEnvironmentService(), fsService)
+
 		userService := user.NewOsUserService(configService, fsService)
 		addUserErr := userService.AddUser(username, config.User{
 			Password:       password,

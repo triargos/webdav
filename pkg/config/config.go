@@ -1,33 +1,33 @@
 package config
 
 type Config struct {
-	Network  NetworkConfig   `mapstructure:"network"`
-	Content  ContentConfig   `mapstructure:"content"`
-	Users    map[string]User `mapstructure:"users"`
-	Security SecurityConfig  `mapstructure:"security"`
+	Network  NetworkConfig   `yaml:"network"`
+	Content  ContentConfig   `yaml:"content"`
+	Users    map[string]User `yaml:"users"`
+	Security SecurityConfig  `yaml:"security"`
 }
 
 type SecurityConfig struct {
-	AuthType string `mapstructure:"authtype"`
+	AuthType string `yaml:"authtype"`
 }
 
 type NetworkConfig struct {
-	Address string `mapstructure:"address"`
-	Port    string `mapstructure:"port"`
-	Prefix  string `mapstructure:"prefix,omitempty"`
+	Address string `yaml:"address"`
+	Port    string `yaml:"port"`
+	Prefix  string `yaml:"prefix,omitempty"`
 }
 
 type ContentConfig struct {
-	Dir            string   `mapstructure:"dir"`
-	SubDirectories []string `mapstructure:"subdirectories,omitempty"`
+	Dir            string   `yaml:"dir"`
+	SubDirectories []string `yaml:"subdirectories,omitempty"`
 }
 
 type User struct {
-	Password       string   `mapstructure:"password"`
-	Root           string   `mapstructure:"root,omitempty"`
-	SubDirectories []string `mapstructure:"subdirectories,omitempty"`
-	Jail           bool     `mapstructure:"jail,omitempty"`
-	Admin          bool     `mapstructure:"admin"`
+	Password       string   `yaml:"password"`
+	Root           string   `yaml:"root,omitempty"`
+	SubDirectories []string `yaml:"subdirectories,omitempty"`
+	Jail           bool     `yaml:"jail,omitempty"`
+	Admin          bool     `yaml:"admin"`
 }
 
 var configTemplate = Config{
