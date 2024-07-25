@@ -43,7 +43,7 @@ var startCmd = &cobra.Command{
 			slog.Error("Failed to create user directories", "error", createDirectoryErr.Error())
 			os.Exit(1)
 		}
-		slog.Info("Hashing unhashed passwords...")
+		slog.Info("Checking if passwords should be hashed...")
 		hashPasswordsErr := userService.HashPasswords()
 		if hashPasswordsErr != nil {
 			slog.Error("Failed to hash passwords", "error", hashPasswordsErr.Error())
