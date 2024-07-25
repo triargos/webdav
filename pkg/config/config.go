@@ -14,7 +14,6 @@ type SecurityConfig struct {
 type NetworkConfig struct {
 	Address string `yaml:"address"`
 	Port    string `yaml:"port"`
-	Prefix  string `yaml:"prefix,omitempty"`
 }
 
 type ContentConfig struct {
@@ -34,7 +33,6 @@ var configTemplate = Config{
 	Network: NetworkConfig{
 		Address: "0.0.0.0",
 		Port:    "8080",
-		Prefix:  "/",
 	},
 	Content: ContentConfig{
 		Dir:            "/var/webdav/data",
@@ -51,7 +49,6 @@ func DeepCopyConfig(original Config) Config {
 		Network: NetworkConfig{
 			Address: original.Network.Address,
 			Port:    original.Network.Port,
-			Prefix:  original.Network.Prefix,
 		},
 		Security: SecurityConfig{
 			AuthType: original.Security.AuthType,
