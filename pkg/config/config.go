@@ -66,7 +66,7 @@ func DeepCopyConfig(original Config) Config {
 }
 
 type EnvironmentConfig struct {
-	WebdavPort        string
-	CreateNoAdminUser bool
-	WebdavDataDir     string
+	WebdavPort    string
+	WebdavDataDir string
+	AuthType      string
 }
