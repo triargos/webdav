@@ -1,3 +1,16 @@
+# [3.2.0-dev.1](https://github.com/triargos/webdav/compare/v3.1.1-dev.1...v3.2.0-dev.1) (2024-07-25)
+
+
+### Bug Fixes
+
+* **cmd:** name resetConfigCmd correctly ([f652dda](https://github.com/triargos/webdav/commit/f652dda582dd084a0230092521bc6d1c744bb83e))
+
+
+### Features
+
+* **cmd:** add genconfig command for generating configurations ([9695c4a](https://github.com/triargos/webdav/commit/9695c4a11932a6f50b5948ba00bfe466037bdd33))
+* **config:** allow auth type specification via envíronment variable ([08275f7](https://github.com/triargos/webdav/commit/08275f77f517557a9e3aba6349e113890c8d0190))
+
 ## [3.1.1-dev.1](https://github.com/triargos/webdav/compare/v3.1.0...v3.1.1-dev.1) (2024-07-23)
 
 
