@@ -1,3 +1,10 @@
+# [3.2.0-dev.2](https://github.com/triargos/webdav/compare/v3.2.0-dev.1...v3.2.0-dev.2) (2024-07-25)
+
+
+### Bug Fixes
+
+* **docs:** remove unused prefix from docs ([f958994](https://github.com/triargos/webdav/commit/f95899456712322321725b2bdf238cd0bd837340))
+
 # [3.2.0-dev.1](https://github.com/triargos/webdav/compare/v3.1.1-dev.1...v3.2.0-dev.1) (2024-07-25)
 
 
