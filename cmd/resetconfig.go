@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var genconfigCmd = &cobra.Command{
+var resetConfigCmd = &cobra.Command{
 	Use:   "resetconfig",
 	Short: "Reset the current config to the default values",
 	Long:  "Resets the current configuration file to the defaults specified in the github repository",
@@ -26,6 +26,6 @@ var genconfigCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(genconfigCmd)
+	rootCmd.AddCommand(resetConfigCmd)
 
 }
