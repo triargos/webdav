@@ -39,7 +39,6 @@ If you specify no configuration file, the server will autogenerate a sample conf
 network:
   address: 0.0.0.0
   port: "8080"
-  prefix: /
 security:
   auth_type: basic
 content:
