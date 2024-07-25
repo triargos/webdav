@@ -24,16 +24,16 @@ type Service interface {
 	HashPasswords() error
 }
 
-type OsUserService struct {
+type ServiceImpl struct {
 	configService config.Service
 	fsService     fs.Service
 }
 
 func NewOsUserService(configService config.Service, fsService fs.Service) Service {
-	return &OsUserService{configService: configService, fsService: fsService}
+	return &ServiceImpl{configService: configService, fsService: fsService}
 }
 
-func (s *OsUserService) createUserDirectories(user config.User, contentRoot string) error {
+func (s *ServiceImpl) createUserDirectories(user config.User, contentRoot string) error {
 	userRoot := filepath.Join(contentRoot, user.Root)
 	createDirectoryErr := s.fsService.CreateDirectories(userRoot, os.ModePerm)
 	if createDirectoryErr != nil {
@@ -58,7 +58,7 @@ func generateDigestHash(username, password string) string {
 	hash := helper.Md5Hash(fmt.Sprintf("%s:%s:%s", username, "WebDAV", password))
 	return hash
 }
-func (s *OsUserService) GenerateHash(username, password string) string {
+func (s *ServiceImpl) GenerateHash(username, password string) string {
 	authType := s.configService.Get().Security.AuthType
 	switch authType {
 	case "basic":
@@ -73,7 +73,7 @@ func (s *OsUserService) GenerateHash(username, password string) string {
 	return ""
 }
 
-func (s *OsUserService) AddUser(username string, user config.User) error {
+func (s *ServiceImpl) AddUser(username string, user config.User) error {
 	user.Password = s.GenerateHash(username, user.Password)
 	s.configService.AddUser(username, user)
 	writeConfigErr := s.configService.Write()
@@ -88,18 +88,18 @@ func (s *OsUserService) AddUser(username string, user config.User) error {
 	return nil
 }
 
-func (s *OsUserService) GetUser(username string) config.User {
+func (s *ServiceImpl) GetUser(username string) config.User {
 	users := s.configService.Get().Users
 	return users[username]
 }
 
-func (s *OsUserService) HasUser(username string) bool {
+func (s *ServiceImpl) HasUser(username string) bool {
 	users := s.configService.Get().Users
 	_, ok := users[username]
 	return ok
 }
 
-func (s *OsUserService) RemoveUser(username string) error {
+func (s *ServiceImpl) RemoveUser(username string) error {
 	if !s.HasUser(username) {
 		return errors.New("user does not exist")
 	}
@@ -117,7 +117,7 @@ func (s *OsUserService) RemoveUser(username string) error {
 	return nil
 }
 
-func (s *OsUserService) InitializeDirectories() error {
+func (s *ServiceImpl) InitializeDirectories() error {
 	users := s.configService.Get().Users
 	contentRoot := s.configService.Get().Content.Dir
 	for _, user := range users {
@@ -129,14 +129,14 @@ func (s *OsUserService) InitializeDirectories() error {
 	return nil
 }
 
-func (s *OsUserService) HashPasswords() error {
+func (s *ServiceImpl) HashPasswords() error {
 	if s.configService.Get().Security.AuthType != "basic" {
-		slog.Info("skipping password hashing because auth type is not basic")
+		slog.Info("Skipping hash step because auth type is digest")
 		return nil
 	}
 	for username, user := range s.configService.Get().Users {
 		if !isHashed(user.Password) {
-			slog.Info("password for user is not hashed, hashing now", "username", username)
+			slog.Info("Password for user is not hashed, hashing now", "username", username)
 			user.Password = GenHash([]byte(user.Password))
 			s.configService.UpdateUser(username, user)
 		}
@@ -144,7 +144,7 @@ func (s *OsUserService) HashPasswords() error {
 	return s.configService.Write()
 }
 
-func (s *OsUserService) GetUsers() map[string]config.User {
+func (s *ServiceImpl) GetUsers() map[string]config.User {
 	return s.configService.Get().Users
 }
 
