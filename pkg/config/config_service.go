@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/triargos/webdav/pkg/environment"
 	"github.com/triargos/webdav/pkg/fs"
+	"github.com/triargos/webdav/pkg/helper"
 	"gopkg.in/yaml.v3"
 	"log/slog"
 	"os"
@@ -94,11 +95,11 @@ func (s *ConfigService) GenerateDefault(environmentConfig EnvironmentConfig) Con
 	if environmentConfig.WebdavPort != "" {
 		defaultConfig.Network.Port = environmentConfig.WebdavPort
 	}
-	if environmentConfig.CreateNoAdminUser {
-		defaultConfig.Users = map[string]User{}
-	}
 	if environmentConfig.WebdavDataDir != "" {
 		defaultConfig.Content.Dir = environmentConfig.WebdavDataDir
+	}
+	if environmentConfig.AuthType != "" && helper.ValidateAuthType(environmentConfig.AuthType) {
+		defaultConfig.Security.AuthType = environmentConfig.AuthType
 	}
 	return defaultConfig
 }
@@ -129,12 +130,12 @@ func (s *ConfigService) UpdateUser(username string, user User) {
 
 func (s *ConfigService) readEnvironmentConfig() EnvironmentConfig {
 	webdavPort := s.environmentService.Get("WEBDAV_PORT")
-	noAdminUser := s.environmentService.GetBool("CREATE_ADMIN_USER")
 	webdavDataDir := s.environmentService.Get("WEBDAV_DATA_DIR")
+	authType := s.environmentService.Get("AUTH_TYPE")
 	return EnvironmentConfig{
-		WebdavPort:        webdavPort,
-		CreateNoAdminUser: noAdminUser,
-		WebdavDataDir:     webdavDataDir,
+		WebdavPort:    webdavPort,
+		WebdavDataDir: webdavDataDir,
+		AuthType:      authType,
 	}
 }
 
