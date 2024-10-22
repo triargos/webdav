@@ -6,6 +6,8 @@ import (
 	"github.com/triargos/webdav/pkg/config"
 	"github.com/triargos/webdav/pkg/fs"
 	"github.com/triargos/webdav/pkg/handler"
+	"github.com/triargos/webdav/pkg/middleware"
+	"github.com/triargos/webdav/pkg/user"
 	"golang.org/x/net/webdav"
 	"log/slog"
 	"net/http"
@@ -24,28 +26,38 @@ func webdavLogger(req *http.Request, err error) {
 
 }
 
+type SSLConfig struct {
+	CertFilePath string
+	KeyFilePath  string
+}
+
 type StartWebdavServerContainer struct {
 	ConfigService       config.Service
 	AuthService         auth.Service
+	UserService         user.Service
 	DigestAuthenticator auth.DigestAuthenticator
 	WebdavFileSystem    *handler.WebdavFs
 	FsService           fs.Service
+	SSLConfig           *SSLConfig
 }
 
 func StartWebdavServer(container StartWebdavServerContainer) error {
 	configurationValue := container.ConfigService.Get()
 	address := fmt.Sprintf("%s:%s", configurationValue.Network.Address, configurationValue.Network.Port)
 	webdavSrv := handler.NewWebdavHandler(container.WebdavFileSystem, webdav.NewMemLS(), webdavLogger)
-	authType := container.ConfigService.Get().Security.AuthType
-	middleware := auth.BasicAuthMiddleware(container.AuthService)
-	if authType == "digest" {
-		middleware = auth.DigestAuthMiddleware(container.DigestAuthenticator, container.AuthService)
-	}
-	http.Handle("/", middleware(webdavSrv))
+	authenticator := auth.NewBasicAuthenticator(container.UserService)
+	http.Handle("/", middleware.TestHeaderMiddleware(authenticator.Middleware(webdavSrv)))
 	go func() {
-		slog.Info("Starting server", "address", address)
-		if err := http.ListenAndServe(address, nil); err != nil {
-			slog.Error("Failed to start server", "error", err)
+		if container.SSLConfig != nil {
+			slog.Info("Starting the server using HTTPS...")
+			if startErr := http.ListenAndServeTLS(":443", container.SSLConfig.CertFilePath, container.SSLConfig.KeyFilePath, nil); startErr != nil {
+				slog.Error("failed to start HTTPS server", "error", startErr)
+			}
+		} else {
+			slog.Info("Starting the server using HTTP...")
+			if err := http.ListenAndServe(address, nil); err != nil {
+				slog.Error("Failed to start server", "error", err)
+			}
 		}
 	}()
 	quit := make(chan os.Signal, 1)

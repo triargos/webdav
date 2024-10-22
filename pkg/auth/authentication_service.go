@@ -11,15 +11,15 @@ type Service interface {
 	HasPermission(path string, username string) bool
 }
 
-type BasicAuthenticator struct {
+type BasicAuthService struct {
 	userService user.Service
 }
 
 func New(userService user.Service) Service {
-	return &BasicAuthenticator{userService: userService}
+	return &BasicAuthService{userService: userService}
 }
 
-func (s *BasicAuthenticator) Authenticate(username, password string) bool {
+func (s *BasicAuthService) Authenticate(username, password string) bool {
 	if !s.userService.HasUser(username) {
 		return false
 	}
@@ -28,7 +28,7 @@ func (s *BasicAuthenticator) Authenticate(username, password string) bool {
 	return verifyPasswordErr == nil
 }
 
-func (s *BasicAuthenticator) HasPermission(path string, username string) bool {
+func (s *BasicAuthService) HasPermission(path string, username string) bool {
 	if !s.userService.HasUser(username) {
 		return false
 	}

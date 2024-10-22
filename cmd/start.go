@@ -58,12 +58,15 @@ var startCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		digestAuthenticator := auth.NewDigestAuthenticator(userService)
+		sslConfig := parseSSLConfig(cmd)
 		startServerErr := server.StartWebdavServer(server.StartWebdavServerContainer{
 			ConfigService:       configService,
 			WebdavFileSystem:    webdavFileSystem,
 			AuthService:         authService,
+			UserService:         userService,
 			FsService:           fsService,
 			DigestAuthenticator: digestAuthenticator,
+			SSLConfig:           sslConfig,
 		})
 		if startServerErr != nil {
 			slog.Error("Failed to start webdav server", "error", startServerErr.Error())
@@ -72,6 +75,22 @@ var startCmd = &cobra.Command{
 	},
 }
 
+func parseSSLConfig(cmd *cobra.Command) *server.SSLConfig {
+	certFilePath, _ := cmd.Flags().GetString("certificate")
+	keyFilePath, _ := cmd.Flags().GetString("key")
+	if certFilePath != "" && keyFilePath != "" {
+		return &server.SSLConfig{
+			CertFilePath: certFilePath,
+			KeyFilePath:  keyFilePath,
+		}
+	}
+	return nil
+
+}
+
 func init() {
+	startCmd.Flags().StringP("certificate", "c", "", "The certificate file path for HTTPS (optional)")
+	startCmd.Flags().StringP("key", "k", "", "The key file path for HTTPS (optional)")
+
 	rootCmd.AddCommand(startCmd)
 }

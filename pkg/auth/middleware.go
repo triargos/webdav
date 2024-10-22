@@ -11,10 +11,15 @@ import (
 func BasicAuthMiddleware(authenticationService Service) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			//If its options, then just return
+			if request.Method == http.MethodOptions || request.Method == http.MethodHead || request.Method == "PROPFIND" {
+				next.ServeHTTP(writer, request)
+				return
+			}
 			username, password, ok := request.BasicAuth()
 			if !ok {
 				writer.Header().Set("WWW-Authenticate", `Basic realm="WebDAV"`)
-				slog.Error("Unauthorized access attempt: No credentials provided", "remote_addr", request.RemoteAddr)
+				slog.Error("Unauthorized access attempt: No credentials provided", "path", request.URL.Path, "method", request.Method, "remote_addr", request.RemoteAddr)
 				http.Error(writer, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
