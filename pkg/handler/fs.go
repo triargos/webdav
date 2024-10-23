@@ -2,20 +2,17 @@ package handler
 
 import (
 	"context"
-	"github.com/triargos/webdav/pkg/auth"
 	"golang.org/x/net/webdav"
 	"os"
 )
 
 type WebdavFs struct {
 	webdav.FileSystem
-	authService auth.Service
 }
 
-func NewWebdavFs(fs webdav.FileSystem, authService auth.Service) *WebdavFs {
+func NewWebdavFs(fs webdav.FileSystem) *WebdavFs {
 	return &WebdavFs{
-		FileSystem:  fs,
-		authService: authService,
+		FileSystem: fs,
 	}
 }
 

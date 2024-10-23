@@ -33,7 +33,6 @@ type SSLConfig struct {
 
 type StartWebdavServerContainer struct {
 	ConfigService       config.Service
-	AuthService         auth.Service
 	UserService         user.Service
 	DigestAuthenticator auth.DigestAuthenticator
 	WebdavFileSystem    *handler.WebdavFs
