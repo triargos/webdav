@@ -14,6 +14,7 @@ type BasicAuthenticator struct {
 
 func (authenticator BasicAuthenticator) PerformAuthentication(writer http.ResponseWriter, request *http.Request) (string, http.ResponseWriter) {
 	username, password, ok := request.BasicAuth()
+	slog.Info("BasicAuth", "username", username, "password", password, "ok", ok, "method", request.Method, "path", request.URL.Path)
 	if !ok {
 		writer.Header().Set("WWW-Authenticate", `Basic realm="WebDAV"`)
 		return "", writer
@@ -33,7 +34,7 @@ func (authenticator BasicAuthenticator) validateCredentials(username, password s
 	userObject := authenticator.userService.GetUser(username)
 	verifyPasswordErr := bcrypt.CompareHashAndPassword([]byte(userObject.Password), []byte(password))
 	if verifyPasswordErr != nil {
-		slog.Error("Invalid password", "username", username)
+		slog.Error("failed to verify password", "username", username, "password", password, "error", verifyPasswordErr)
 	}
 	return verifyPasswordErr
 }

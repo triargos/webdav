@@ -12,7 +12,6 @@ func TestHeaderMiddleware(handler http.Handler) http.Handler {
 		writer.Header().Set("Content-Security-Policy", "default-src 'none'")
 		writer.Header().Set("Pragma", "no-cache")
 		writer.Header().Set("Vary", "Brief,Prefer,Accept-Encoding")
-		writer.Header().Set("DAV", "1, 3, extended-mkcol, access-control, calendarserver-principal-property-search, nc-calendar-search, nc-enable-birthday-calendar")
 		writer.Header().Set("Referrer-Policy", "no-referrer")
 		writer.Header().Set("X-Content-Type-Options", "nosniff")
 		writer.Header().Set("X-Download-Options", "noopen")
