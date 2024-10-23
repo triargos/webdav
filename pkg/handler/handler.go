@@ -24,11 +24,18 @@ func NewWebdavHandler(fs webdav.FileSystem, ls webdav.LockSystem, logger func(*h
 }
 
 func (h *WebDAVHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Ms-Author-Via", "DAV")
+	w.Header().Set("DAV", "1, 3, extended-mkcol, access-control, calendarserver-principal-property-search")
 	if r.Method == http.MethodHead {
 		h.handleHead(w, r)
 		return
 	}
 	h.Handler.ServeHTTP(w, r)
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Allow", "OPTIONS, GET, HEAD, DELETE, PROPFIND, PUT, PROPPATCH, COPY, MOVE, REPORT, MKCOL")
+
+	}
+
 }
 
 func (h *WebDAVHandler) handleHead(w http.ResponseWriter, r *http.Request) {
@@ -62,6 +69,8 @@ func (h *WebDAVHandler) handleHead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("ETag", etag)
+	w.Header().Set("Allow", "OPTIONS, GET, HEAD, DELETE, PROPFIND, PUT, PROPPATCH, COPY, MOVE, REPORT, MKCOL")
+
 	http.ServeContent(w, r, reqPath, fi.ModTime(), f)
 }
 

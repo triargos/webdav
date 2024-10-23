@@ -19,11 +19,6 @@ import (
 )
 
 func webdavLogger(req *http.Request, err error) {
-	if err != nil {
-		slog.Error("REQ", "method", req.Method, "path", req.URL.Path, "error", err)
-	} else {
-		slog.Info("REQ", "method", req.Method, "path", req.URL.Path)
-	}
 
 }
 

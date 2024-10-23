@@ -14,7 +14,6 @@ type BasicAuthenticator struct {
 
 func (authenticator BasicAuthenticator) PerformAuthentication(writer http.ResponseWriter, request *http.Request) (string, http.ResponseWriter) {
 	username, password, ok := request.BasicAuth()
-	slog.Info("BasicAuth", "username", username, "password", password, "ok", ok, "method", request.Method, "path", request.URL.Path)
 	if !ok {
 		writer.Header().Set("WWW-Authenticate", `Basic realm="WebDAV"`)
 		return "", writer
