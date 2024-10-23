@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/triargos/webdav/pkg/user"
 	"golang.org/x/crypto/bcrypt"
+	"log/slog"
 	"net/http"
 )
 
@@ -26,10 +27,14 @@ func (authenticator BasicAuthenticator) PerformAuthentication(writer http.Respon
 
 func (authenticator BasicAuthenticator) validateCredentials(username, password string) error {
 	if !authenticator.userService.HasUser(username) {
+		slog.Error("User not found", "username", username)
 		return fmt.Errorf("user not found")
 	}
 	userObject := authenticator.userService.GetUser(username)
 	verifyPasswordErr := bcrypt.CompareHashAndPassword([]byte(userObject.Password), []byte(password))
+	if verifyPasswordErr != nil {
+		slog.Error("Invalid password", "username", username)
+	}
 	return verifyPasswordErr
 }
 
