@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/triargos/webdav/pkg/auth"
 	"github.com/triargos/webdav/pkg/config"
+	"github.com/triargos/webdav/pkg/cookie"
 	"github.com/triargos/webdav/pkg/fs"
 	"github.com/triargos/webdav/pkg/handler"
-	"github.com/triargos/webdav/pkg/middleware"
 	"github.com/triargos/webdav/pkg/user"
 	"golang.org/x/net/webdav"
 	"log/slog"
@@ -39,14 +39,17 @@ type StartWebdavServerContainer struct {
 	WebdavFileSystem    *handler.WebdavFs
 	FsService           fs.Service
 	SSLConfig           *SSLConfig
+	CookieService       *cookie.Service
 }
 
 func StartWebdavServer(container StartWebdavServerContainer) error {
 	configurationValue := container.ConfigService.Get()
 	address := fmt.Sprintf("%s:%s", configurationValue.Network.Address, configurationValue.Network.Port)
 	webdavSrv := handler.NewWebdavHandler(container.WebdavFileSystem, webdav.NewMemLS(), webdavLogger)
-	authenticator := auth.NewBasicAuthenticator(container.UserService)
-	http.Handle("/", middleware.TestHeaderMiddleware(authenticator.Middleware(webdavSrv)))
+	authenticator := getAuthenticator(configurationValue, container.UserService)
+	authMiddleware := auth.NewMiddleware(authenticator, container.CookieService)
+
+	http.Handle("/", authMiddleware.Middleware(webdavSrv))
 	go func() {
 		if container.SSLConfig != nil {
 			slog.Info("Starting the server using HTTPS...")
@@ -67,4 +70,11 @@ func StartWebdavServer(container StartWebdavServerContainer) error {
 	time.Sleep(1 * time.Second)
 	slog.Info("Server stopped")
 	return nil
+}
+
+func getAuthenticator(configurationValue *config.Config, userService user.Service) auth.Authenticator {
+	if configurationValue.Security.AuthType == "digest" {
+		return auth.NewDigestAuthenticator(userService)
+	}
+	return auth.NewBasicAuthenticator(userService)
 }

@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/triargos/webdav/pkg/auth"
 	"github.com/triargos/webdav/pkg/config"
+	"github.com/triargos/webdav/pkg/cookie"
 	"github.com/triargos/webdav/pkg/environment"
 	"github.com/triargos/webdav/pkg/fs"
 	"github.com/triargos/webdav/pkg/handler"
@@ -59,6 +60,7 @@ var startCmd = &cobra.Command{
 		}
 		digestAuthenticator := auth.NewDigestAuthenticator(userService)
 		sslConfig := parseSSLConfig(cmd)
+		cookieService := cookie.New()
 		startServerErr := server.StartWebdavServer(server.StartWebdavServerContainer{
 			ConfigService:       configService,
 			WebdavFileSystem:    webdavFileSystem,
@@ -67,6 +69,7 @@ var startCmd = &cobra.Command{
 			FsService:           fsService,
 			DigestAuthenticator: digestAuthenticator,
 			SSLConfig:           sslConfig,
+			CookieService:       cookieService,
 		})
 		if startServerErr != nil {
 			slog.Error("Failed to start webdav server", "error", startServerErr.Error())

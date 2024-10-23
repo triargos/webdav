@@ -2,15 +2,17 @@ package auth
 
 import (
 	"fmt"
+	"github.com/triargos/webdav/pkg/cookie"
 	"github.com/triargos/webdav/pkg/helper"
 	"github.com/triargos/webdav/pkg/user"
-	"log/slog"
+	"net/http"
 	"strings"
 	"time"
 )
 
 type DigestAuthenticator struct {
-	userService user.Service
+	userService   user.Service
+	cookieService cookie.Service
 }
 
 type AuthenticateDigestOptions struct {
@@ -23,43 +25,48 @@ func NewDigestAuthenticator(userService user.Service) DigestAuthenticator {
 	return DigestAuthenticator{userService: userService}
 }
 
-func (digestAuthenticator DigestAuthenticator) Authenticate(options AuthenticateDigestOptions) (username string, ok bool) {
-	const prefix = "Digest "
-	if !strings.HasPrefix(options.AuthHeader, prefix) {
-		slog.Error("missing prefix", "prefix", prefix, "auth_header", options.AuthHeader)
-		return "", false
+func (authenticator DigestAuthenticator) PerformAuthentication(writer http.ResponseWriter, request *http.Request) (string, http.ResponseWriter) {
+	const realm = "WebDAV"
+	authHeader := request.Header.Get("Authorization")
+	if authHeader == "" {
+		nonce := authenticator.generateNonce()
+		writer.Header().Set("WWW-Authenticate", fmt.Sprintf(`Digest realm="%s", qop="auth", nonce="%s", opaque="%s"`, realm, nonce, authenticator.generateOpaque(nonce)))
+		return "", writer
 	}
-	params := ParseAuthHeader(strings.TrimPrefix(options.AuthHeader, prefix))
-	if params["realm"] != "WebDAV" {
-		slog.Error("invalid realm", "realm", params["realm"])
-		return "", false
+	params := authenticator.parseAuthHeader(authHeader)
+	username := params["username"]
+	if !authenticator.userService.HasUser(username) {
+		return "", writer
 	}
-	username = params["username"]
-	if !digestAuthenticator.userService.HasUser(username) {
-		slog.Error("user does not exist", "username", username)
-		return username, false
+	validateCredentialsErr := authenticator.validateCredentials(username, request.Method, request.URL.Path, params)
+	if validateCredentialsErr != nil {
+		return "", writer
 	}
-	webdavUser := digestAuthenticator.userService.GetUser(username)
-	ha1 := webdavUser.Password
-	ha2 := helper.Md5Hash(fmt.Sprintf("%s:%s", options.Method, options.Uri))
-	response := helper.Md5Hash(fmt.Sprintf("%s:%s:%s:%s:%s:%s", ha1, params["nonce"], params["nc"], params["cnonce"], params["qop"], ha2))
-	if response != params["response"] {
-		slog.Error("invalid response", "response", response, "expected", params["response"])
-		return username, false
-	}
-	return username, true
+	return username, writer
+
 }
 
-func (digestAuthenticator DigestAuthenticator) GenerateNonce() string {
+func (authenticator DigestAuthenticator) validateCredentials(username, method, uri string, params map[string]string) error {
+	webdavUser := authenticator.userService.GetUser(username)
+	userPasswordHash := webdavUser.Password
+	requestHash := helper.Md5Hash(fmt.Sprintf("%s:%s", method, uri))
+	response := helper.Md5Hash(fmt.Sprintf("%s:%s:%s:%s:%s:%s", userPasswordHash, params["nonce"], params["nc"], params["cnonce"], params["qop"], requestHash))
+	if response != params["response"] {
+		return fmt.Errorf("invalid response")
+	}
+	return nil
+}
+
+func (authenticator DigestAuthenticator) generateNonce() string {
 	data := fmt.Sprintf("%d", time.Now().UnixNano())
 	return helper.Md5Hash(data)
 }
 
-func (digestAuthenticator DigestAuthenticator) GenerateOpaque(nonce string) string {
+func (authenticator DigestAuthenticator) generateOpaque(nonce string) string {
 	return helper.Md5Hash(nonce)
 }
 
-func ParseAuthHeader(header string) map[string]string {
+func (authenticator DigestAuthenticator) parseAuthHeader(header string) map[string]string {
 	params := make(map[string]string)
 	for _, part := range strings.Split(header, ",") {
 		kv := strings.SplitN(strings.TrimSpace(part), "=", 2)
