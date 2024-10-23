@@ -4,14 +4,17 @@ import (
 	"context"
 	"fmt"
 	"github.com/triargos/webdav/pkg/cookie"
+	"github.com/triargos/webdav/pkg/environment"
 	"github.com/triargos/webdav/pkg/helper"
 	"log/slog"
 	"net/http"
+	"regexp"
 )
 
 type AuthenticationMiddleware struct {
 	authenticator Authenticator
 	cookieService *cookie.Service
+	envService    environment.Service
 }
 
 func (middleware *AuthenticationMiddleware) Middleware(next http.Handler) http.Handler {
@@ -53,12 +56,21 @@ func (middleware *AuthenticationMiddleware) shouldAuthenticate(request *http.Req
 	if request.Method == http.MethodOptions || request.Method == http.MethodHead {
 		return false
 	}
+	regex := regexp.MustCompile("^Microsoft Office(?: .*)?$")
+	userAgent := request.Header.Get("User-Agent")
+	isOffice := regex.MatchString(userAgent)
+
+	if middleware.envService.GetBool("DISABLE_OFFICE_AUTH") && isOffice {
+		return false
+	}
+
 	return true
 }
 
-func NewMiddleware(authenticator Authenticator, cookieService *cookie.Service) AuthenticationMiddleware {
+func NewMiddleware(authenticator Authenticator, cookieService *cookie.Service, envService environment.Service) AuthenticationMiddleware {
 	return AuthenticationMiddleware{
 		authenticator: authenticator,
 		cookieService: cookieService,
+		envService:    envService,
 	}
 }

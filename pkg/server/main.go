@@ -5,6 +5,7 @@ import (
 	"github.com/triargos/webdav/pkg/auth"
 	"github.com/triargos/webdav/pkg/config"
 	"github.com/triargos/webdav/pkg/cookie"
+	"github.com/triargos/webdav/pkg/environment"
 	"github.com/triargos/webdav/pkg/fs"
 	"github.com/triargos/webdav/pkg/handler"
 	"github.com/triargos/webdav/pkg/middleware"
@@ -35,6 +36,7 @@ type StartWebdavServerContainer struct {
 	FsService           fs.Service
 	SSLConfig           *SSLConfig
 	CookieService       *cookie.Service
+	EnvService          environment.Service
 }
 
 func StartWebdavServer(container StartWebdavServerContainer) error {
@@ -42,7 +44,7 @@ func StartWebdavServer(container StartWebdavServerContainer) error {
 	address := fmt.Sprintf("%s:%s", configurationValue.Network.Address, configurationValue.Network.Port)
 	webdavSrv := handler.NewWebdavHandler(container.WebdavFileSystem, webdav.NewMemLS(), webdavLogger)
 	authenticator := getAuthenticator(configurationValue, container.UserService)
-	authMiddleware := auth.NewMiddleware(authenticator, container.CookieService)
+	authMiddleware := auth.NewMiddleware(authenticator, container.CookieService, container.EnvService)
 
 	http.Handle("/", middleware.TestHeaderMiddleware(authMiddleware.Middleware(webdavSrv)))
 	go func() {

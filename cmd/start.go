@@ -60,6 +60,7 @@ var startCmd = &cobra.Command{
 		digestAuthenticator := auth.NewDigestAuthenticator(userService)
 		sslConfig := parseSSLConfig(cmd)
 		cookieService := cookie.New()
+		envService := environment.NewOsEnvironmentService()
 		startServerErr := server.StartWebdavServer(server.StartWebdavServerContainer{
 			ConfigService:       configService,
 			WebdavFileSystem:    webdavFileSystem,
@@ -68,6 +69,7 @@ var startCmd = &cobra.Command{
 			DigestAuthenticator: digestAuthenticator,
 			SSLConfig:           sslConfig,
 			CookieService:       cookieService,
+			EnvService:          envService,
 		})
 		if startServerErr != nil {
 			slog.Error("Failed to start webdav server", "error", startServerErr.Error())
