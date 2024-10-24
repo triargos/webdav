@@ -8,7 +8,6 @@ import (
 	"github.com/triargos/webdav/pkg/environment"
 	"github.com/triargos/webdav/pkg/fs"
 	"github.com/triargos/webdav/pkg/handler"
-	"github.com/triargos/webdav/pkg/middleware"
 	"github.com/triargos/webdav/pkg/user"
 	"golang.org/x/net/webdav"
 	"log/slog"
@@ -46,7 +45,7 @@ func StartWebdavServer(container StartWebdavServerContainer) error {
 	authenticator := getAuthenticator(configurationValue, container.UserService)
 	authMiddleware := auth.NewMiddleware(authenticator, container.CookieService, container.EnvService)
 
-	http.Handle("/", middleware.TestHeaderMiddleware(authMiddleware.Middleware(webdavSrv)))
+	http.Handle("/", authMiddleware.Middleware(webdavSrv))
 	go func() {
 		if container.SSLConfig != nil {
 			slog.Info("Starting the server using HTTPS...")
